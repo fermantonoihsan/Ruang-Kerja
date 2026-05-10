@@ -7,7 +7,9 @@
     <title>Atlas Workspace</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
-    <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
+    <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
     <script defer src="app.js"></script>
   </head>
@@ -205,20 +207,28 @@
       <form method="dialog" class="modal-card" id="settingsForm">
         <div class="modal-header">
           <div>
-            <h2>Cloud Settings</h2>
-            <span>Supabase project untuk auth dan sync.</span>
+            <h2>Firebase Settings</h2>
+            <span>Firebase project untuk auth dan Firestore sync.</span>
           </div>
           <button class="icon-button" type="button" data-close-dialog aria-label="Tutup">
             <i data-lucide="x"></i>
           </button>
         </div>
         <label>
-          <span>Supabase URL</span>
-          <input id="supabaseUrl" type="url" placeholder="https://xxxxx.supabase.co" />
+          <span>API key</span>
+          <input id="firebaseApiKey" type="password" placeholder="AIza..." />
         </label>
         <label>
-          <span>Supabase anon key</span>
-          <input id="supabaseAnonKey" type="password" placeholder="eyJhbGciOi..." />
+          <span>Auth domain</span>
+          <input id="firebaseAuthDomain" type="text" placeholder="project-id.firebaseapp.com" />
+        </label>
+        <label>
+          <span>Project ID</span>
+          <input id="firebaseProjectId" type="text" placeholder="project-id" />
+        </label>
+        <label>
+          <span>App ID</span>
+          <input id="firebaseAppId" type="text" placeholder="1:123:web:abc" />
         </label>
         <div class="modal-actions">
           <button class="button button-quiet" type="button" id="clearCloudConfig">Local only</button>

@@ -1,11 +1,11 @@
 # Atlas Workspace
 
-Aplikasi workspace mirip Notion yang berjalan local-first dan siap disambungkan ke Supabase untuk authentication serta cloud sync.
+Aplikasi workspace mirip Notion yang berjalan local-first dan siap disambungkan ke Firebase untuk authentication serta cloud sync.
 
 ## Fitur
 
-- Email/password authentication lewat Supabase Auth.
-- Cloud sync ke tabel `notion_workspaces` dengan Row Level Security.
+- Email/password authentication lewat Firebase Auth.
+- Cloud sync ke Cloud Firestore per user.
 - Local-first storage lewat `localStorage`.
 - Responsive desktop/mobile.
 - Kanban drag-drop.
@@ -24,22 +24,33 @@ Untuk mode PWA/service worker, jalankan static server di folder ini:
 npx serve .
 ```
 
-## Setup Supabase
+## Setup Firebase
 
-1. Buat project di Supabase.
-2. Buka SQL Editor dan jalankan isi file `supabase.sql`.
-3. Buka Authentication > Providers > Email, lalu aktifkan email/password.
-4. Tambahkan URL app di Authentication > URL Configuration.
-5. Buka app, klik tombol cloud settings, masukkan `Project URL` dan `anon public key`.
-6. Login atau buat akun dari app.
+1. Buat project di Firebase Console.
+2. Buka Build > Authentication > Sign-in method, lalu aktifkan Email/Password.
+3. Buka Build > Firestore Database, buat database, lalu publish rules dari `firebase.rules`.
+4. Buka Project settings > General > Your apps, buat Web app.
+5. Salin `apiKey`, `authDomain`, `projectId`, dan `appId`.
+6. Buka app, klik tombol Firebase Settings, masukkan config tersebut.
+7. Login atau buat akun dari app.
 
-Data workspace akan tersimpan sebagai JSONB per user:
+Data workspace disimpan di:
 
-```sql
-select user_id, updated_at, data
-from public.notion_workspaces;
+```text
+users/{uid}/private/workspace
+```
+
+Contoh Firebase config yang dibutuhkan app:
+
+```js
+{
+  apiKey: "AIza...",
+  authDomain: "project-id.firebaseapp.com",
+  projectId: "project-id",
+  appId: "1:123:web:abc"
+}
 ```
 
 ## Deploy
 
-Folder ini bisa di-deploy sebagai static site ke Vercel, Netlify, Cloudflare Pages, Firebase Hosting, atau Supabase Storage. Untuk production, simpan Supabase URL dan anon key sebagai environment saat build atau isi manual lewat Cloud Settings di app.
+Folder ini bisa di-deploy sebagai static site ke Firebase Hosting, Vercel, Netlify, atau Cloudflare Pages. Untuk production, config Firebase bisa tetap dimasukkan lewat Firebase Settings di app.

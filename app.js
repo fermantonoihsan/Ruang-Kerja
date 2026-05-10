@@ -1,7 +1,6 @@
 const STORAGE_KEY = "atlas_workspace_state_v1";
 const CLOUD_CONFIG_KEY = "atlas_workspace_cloud_v1";
 const FIRED_REMINDERS_KEY = "atlas_workspace_fired_reminders_v1";
-const TABLE_NAME = "notion_workspaces";
 
 const columns = [
   { id: "ideas", title: "Ideas", color: "#315f95" },
@@ -12,8 +11,10 @@ const columns = [
 
 let state = loadState();
 let config = loadCloudConfig();
-let supabaseClient = null;
-let currentSession = null;
+let firebaseApp = null;
+let authClient = null;
+let firestoreClient = null;
+let currentUser = null;
 let authMode = "login";
 let activeView = "notes";
 let activeTag = "";
@@ -27,7 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   cacheElements();
   bindEvents();
   populateStatusSelects();
-  initSupabase();
+  initFirebase();
   renderAll();
   installReminderLoop();
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
@@ -83,8 +84,10 @@ function cacheElements() {
     "submitAuthButton",
     "settingsDialog",
     "settingsForm",
-    "supabaseUrl",
-    "supabaseAnonKey",
+    "firebaseApiKey",
+    "firebaseAuthDomain",
+    "firebaseProjectId",
+    "firebaseAppId",
     "clearCloudConfig",
     "pageDialog",
     "pageForm",
@@ -162,27 +165,33 @@ function bindEvents() {
   el.requestReminderPermission.addEventListener("click", requestNotifications);
 
   el.settingsButton.addEventListener("click", () => {
-    el.supabaseUrl.value = config.url || "";
-    el.supabaseAnonKey.value = config.anonKey || "";
+    el.firebaseApiKey.value = config.apiKey || "";
+    el.firebaseAuthDomain.value = config.authDomain || "";
+    el.firebaseProjectId.value = config.projectId || "";
+    el.firebaseAppId.value = config.appId || "";
     openDialog(el.settingsDialog);
   });
 
   el.settingsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     config = {
-      url: el.supabaseUrl.value.trim(),
-      anonKey: el.supabaseAnonKey.value.trim(),
+      apiKey: el.firebaseApiKey.value.trim(),
+      authDomain: el.firebaseAuthDomain.value.trim(),
+      projectId: el.firebaseProjectId.value.trim(),
+      appId: el.firebaseAppId.value.trim(),
     };
     localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(config));
     el.settingsDialog.close();
-    initSupabase(true);
+    initFirebase(true);
   });
 
   el.clearCloudConfig.addEventListener("click", () => {
-    config = { url: "", anonKey: "" };
+    config = { apiKey: "", authDomain: "", projectId: "", appId: "" };
     localStorage.removeItem(CLOUD_CONFIG_KEY);
-    supabaseClient = null;
-    currentSession = null;
+    firebaseApp = null;
+    authClient = null;
+    firestoreClient = null;
+    currentUser = null;
     el.settingsDialog.close();
     updateSyncStatus("Local mode");
     renderUser();
@@ -190,13 +199,13 @@ function bindEvents() {
   });
 
   el.authButton.addEventListener("click", () => {
-    if (currentSession) {
+    if (currentUser) {
       signOut();
       return;
     }
-    if (!supabaseClient) {
+    if (!authClient) {
       openDialog(el.settingsDialog);
-      toast("Isi Supabase URL dan anon key dulu.");
+      toast("Isi Firebase config dulu.");
       return;
     }
     openAuthDialog("login");
@@ -279,7 +288,7 @@ function createDefaultState() {
     createdAt: now,
     updatedAt: now,
     markdown:
-      "# Meeting Notes\n\nTanggal: Jumat\n\n## Agenda\n1. Review board\n2. Prioritas sprint\n3. Risiko release\n\n## Keputusan\n- Pakai Supabase Auth untuk login\n- Simpan workspace sebagai JSONB dengan RLS",
+      "# Meeting Notes\n\nTanggal: Jumat\n\n## Agenda\n1. Review board\n2. Prioritas sprint\n3. Risiko release\n\n## Keputusan\n- Pakai Firebase Auth untuk login\n- Simpan workspace ke Cloud Firestore dengan Security Rules",
   };
 
   const pageC = {
@@ -294,7 +303,7 @@ function createDefaultState() {
     createdAt: now,
     updatedAt: now,
     markdown:
-      "# Research Vault\n\nGunakan area ini untuk menyimpan link, insight, dan draft.\n\n```js\nconst nextStep = \"ship useful workspace\";\n```\n\n[Supabase](https://supabase.com) cocok untuk auth, database, dan realtime.",
+      "# Research Vault\n\nGunakan area ini untuk menyimpan link, insight, dan draft.\n\n```js\nconst nextStep = \"ship useful workspace\";\n```\n\n[Firebase](https://firebase.google.com) cocok untuk auth, Firestore sync, dan hosting.",
   };
 
   const pageD = {
@@ -323,8 +332,10 @@ function createDefaultState() {
 function loadCloudConfig() {
   const saved = safeJson(localStorage.getItem(CLOUD_CONFIG_KEY));
   return {
-    url: saved?.url || "",
-    anonKey: saved?.anonKey || "",
+    apiKey: saved?.apiKey || "",
+    authDomain: saved?.authDomain || "",
+    projectId: saved?.projectId || "",
+    appId: saved?.appId || "",
   };
 }
 
@@ -347,7 +358,7 @@ function addHours(hours) {
 function saveAndRender(sync = true) {
   state.updatedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  if (sync && currentSession && supabaseClient) {
+  if (sync && currentUser && firestoreClient) {
     queueCloudSync();
   }
   renderAll();
@@ -748,13 +759,13 @@ async function requestNotifications() {
 }
 
 function renderUser() {
-  const user = currentSession?.user;
-  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Guest";
+  const user = currentUser;
+  const displayName = user?.displayName || user?.email?.split("@")[0] || "Guest";
   el.userName.textContent = displayName;
-  el.userEmail.textContent = user?.email || (supabaseClient ? "Belum login" : "Local workspace");
+  el.userEmail.textContent = user?.email || (authClient ? "Belum login" : "Local workspace");
   el.userAvatar.textContent = displayName.slice(0, 1).toUpperCase();
 
-  if (currentSession) {
+  if (currentUser) {
     el.authButton.innerHTML = `<i data-lucide="log-out"></i><span>Logout</span>`;
   } else {
     el.authButton.innerHTML = `<i data-lucide="log-in"></i><span>Login</span>`;
@@ -762,45 +773,51 @@ function renderUser() {
   refreshIcons();
 }
 
-function initSupabase(forceMessage = false) {
-  if (!config.url || !config.anonKey) {
-    supabaseClient = null;
-    currentSession = null;
+function initFirebase(forceMessage = false) {
+  if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId) {
+    firebaseApp = null;
+    authClient = null;
+    firestoreClient = null;
+    currentUser = null;
     updateSyncStatus("Local mode");
     renderUser();
     return;
   }
 
-  if (!window.supabase) {
-    updateSyncStatus("Supabase SDK belum siap");
+  if (!window.firebase?.initializeApp) {
+    updateSyncStatus("Firebase SDK belum siap");
     return;
   }
 
-  supabaseClient = window.supabase.createClient(config.url, config.anonKey, {
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    },
-  });
-
-  supabaseClient.auth.getSession().then(({ data }) => {
-    currentSession = data.session;
+  try {
+    const appName = `atlas-${config.projectId}`;
+    const existingApp = window.firebase.apps.find((app) => app.name === appName);
+    if (existingApp) {
+      firebaseApp = existingApp;
+    } else {
+      firebaseApp = window.firebase.initializeApp(config, appName);
+    }
+    authClient = window.firebase.auth(firebaseApp);
+    firestoreClient = window.firebase.firestore(firebaseApp);
+    firestoreClient.enablePersistence({ synchronizeTabs: true }).catch(() => {});
+  } catch (error) {
+    firebaseApp = null;
+    authClient = null;
+    firestoreClient = null;
+    updateSyncStatus("Firebase config error");
+    toast(error.message);
     renderUser();
-    if (currentSession) {
+    return;
+  }
+
+  authClient.onAuthStateChanged((user) => {
+    currentUser = user;
+    renderUser();
+    if (user) {
       pullCloudState();
     } else {
       updateSyncStatus("Cloud siap, belum login");
       if (forceMessage) toast("Cloud config tersimpan. Silakan login.");
-    }
-  });
-
-  supabaseClient.auth.onAuthStateChange((_event, session) => {
-    currentSession = session;
-    renderUser();
-    if (session) {
-      pullCloudState();
-    } else {
-      updateSyncStatus("Cloud siap, belum login");
     }
   });
 }
@@ -809,7 +826,7 @@ function openAuthDialog(mode) {
   authMode = mode;
   const isSignup = mode === "signup";
   el.authTitle.textContent = isSignup ? "Buat Akun" : "Login";
-  el.authSubtitle.textContent = isSignup ? "Akun Supabase untuk workspace sync." : "Masuk untuk cloud sync.";
+  el.authSubtitle.textContent = isSignup ? "Akun Firebase untuk workspace sync." : "Masuk untuk cloud sync.";
   el.authName.closest("label").style.display = isSignup ? "grid" : "none";
   el.toggleAuthMode.textContent = isSignup ? "Sudah punya akun" : "Buat akun";
   el.submitAuthButton.innerHTML = isSignup ? `<i data-lucide="user-plus"></i><span>Daftar</span>` : `<i data-lucide="log-in"></i><span>Login</span>`;
@@ -818,64 +835,66 @@ function openAuthDialog(mode) {
 }
 
 async function handleAuthSubmit() {
-  if (!supabaseClient) return;
+  if (!authClient) return;
   const email = el.authEmail.value.trim();
   const password = el.authPassword.value;
   updateSyncStatus("Authenticating...");
 
-  const result =
-    authMode === "signup"
-      ? await supabaseClient.auth.signUp({
-          email,
-          password,
-          options: { data: { full_name: el.authName.value.trim() || email.split("@")[0] } },
-        })
-      : await supabaseClient.auth.signInWithPassword({ email, password });
+  try {
+    const credential =
+      authMode === "signup"
+        ? await authClient.createUserWithEmailAndPassword(email, password)
+        : await authClient.signInWithEmailAndPassword(email, password);
 
-  if (result.error) {
+    if (authMode === "signup") {
+      const displayName = el.authName.value.trim() || email.split("@")[0];
+      await credential.user.updateProfile({ displayName });
+    }
+
+    currentUser = credential.user;
+  } catch (error) {
     updateSyncStatus("Auth gagal");
-    toast(result.error.message);
+    toast(firebaseErrorMessage(error));
     return;
   }
 
-  currentSession = result.data.session;
   el.authDialog.close();
   el.authForm.reset();
-  toast(authMode === "signup" ? "Akun dibuat. Cek email jika confirmation aktif." : "Login berhasil.");
-  if (currentSession) pullCloudState();
+  toast(authMode === "signup" ? "Akun Firebase dibuat." : "Login berhasil.");
+  if (currentUser) pullCloudState();
 }
 
 async function signOut() {
-  if (!supabaseClient) return;
+  if (!authClient) return;
   await queueCloudSync(true);
-  await supabaseClient.auth.signOut();
-  currentSession = null;
+  await authClient.signOut();
+  currentUser = null;
   updateSyncStatus("Cloud siap, belum login");
   renderUser();
   toast("Logout berhasil.");
 }
 
 async function pullCloudState() {
-  if (!supabaseClient || !currentSession) return;
+  if (!firestoreClient || !currentUser) return;
   updateSyncStatus("Syncing...");
 
-  const { data, error } = await supabaseClient
-    .from(TABLE_NAME)
-    .select("data, updated_at")
-    .eq("user_id", currentSession.user.id)
-    .maybeSingle();
-
-  if (error) {
+  let snapshot;
+  try {
+    snapshot = await workspaceDocRef().get();
+  } catch (error) {
     updateSyncStatus("Sync error");
-    toast(error.message);
+    toast(firebaseErrorMessage(error));
     return;
   }
 
-  if (data?.data) {
-    const remoteUpdated = new Date(data.updated_at || data.data.updatedAt || 0).getTime();
+  if (snapshot.exists) {
+    const remote = snapshot.data();
+    const remoteData = remote?.data;
+    const remoteUpdatedAt = remote?.updatedAt?.toDate?.() || remote?.updatedAt || remoteData?.updatedAt || 0;
+    const remoteUpdated = new Date(remoteUpdatedAt).getTime();
     const localUpdated = new Date(state.updatedAt || 0).getTime();
-    if (remoteUpdated > localUpdated) {
-      state = normalizeState(data.data);
+    if (remoteData && remoteUpdated > localUpdated) {
+      state = normalizeState(remoteData);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       renderAll();
       toast("Workspace cloud dimuat.");
@@ -890,7 +909,7 @@ async function pullCloudState() {
 }
 
 function queueCloudSync(immediate = false) {
-  if (!supabaseClient || !currentSession) return Promise.resolve();
+  if (!firestoreClient || !currentUser) return Promise.resolve();
   if (syncTimer) clearTimeout(syncTimer);
 
   if (immediate) {
@@ -903,24 +922,39 @@ function queueCloudSync(immediate = false) {
 }
 
 async function pushCloudState() {
-  if (!supabaseClient || !currentSession) return;
+  if (!firestoreClient || !currentUser) return;
   updateSyncStatus("Syncing...");
 
-  const { error } = await supabaseClient.from(TABLE_NAME).upsert(
-    {
-      user_id: currentSession.user.id,
-      data: state,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: "user_id" },
-  );
-
-  if (error) {
+  try {
+    await workspaceDocRef().set(
+      {
+        data: state,
+        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
+        ownerEmail: currentUser.email || "",
+      },
+      { merge: true },
+    );
+  } catch (error) {
     updateSyncStatus("Sync error");
-    toast(error.message);
+    toast(firebaseErrorMessage(error));
     return;
   }
   updateSyncStatus(`Synced ${formatTime(new Date())}`);
+}
+
+function workspaceDocRef() {
+  return firestoreClient.collection("users").doc(currentUser.uid).collection("private").doc("workspace");
+}
+
+function firebaseErrorMessage(error) {
+  const messages = {
+    "auth/email-already-in-use": "Email sudah terdaftar.",
+    "auth/invalid-email": "Format email tidak valid.",
+    "auth/invalid-credential": "Email atau password salah.",
+    "auth/weak-password": "Password minimal 6 karakter.",
+    "permission-denied": "Firestore rules menolak akses. Cek firebase.rules.",
+  };
+  return messages[error?.code] || error?.message || "Firebase error.";
 }
 
 function updateSyncStatus(message) {

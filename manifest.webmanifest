@@ -1,7 +1,7 @@
 {
   "name": "Atlas Workspace",
   "short_name": "Atlas",
-  "description": "Local-first workspace with Supabase auth and cloud sync.",
+  "description": "Local-first workspace with Firebase Auth and Firestore sync.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f7f8fa",
