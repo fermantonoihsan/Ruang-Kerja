@@ -6,6 +6,7 @@
     <meta name="theme-color" content="#f7f8fa" />
     <title>Atlas Workspace</title>
     <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="stylesheet" href="styles/main.css" />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
@@ -24,7 +25,7 @@
           <span class="brand-mark">A</span>
           <div>
             <strong>Atlas Workspace</strong>
-            <span id="syncStatus">Local mode</span>
+            <span class="sync-badge" id="syncStatus">Local mode</span>
           </div>
         </div>
 
@@ -37,8 +38,12 @@
           <button class="icon-button" id="notificationButton" title="Aktifkan reminder" aria-label="Aktifkan reminder">
             <i data-lucide="bell"></i>
           </button>
-         <button class="icon-btn" id="settingsButton" title="Cloud settings" aria-label="Cloud settings" style="display:none;">
-  <span data-lucide="cloud-cog"></span>
+         <button class="icon-button" id="themeToggle" title="Ganti tema" aria-label="Ganti tema">
+  <i data-lucide="moon"></i>
+</button>
+
+<button class="icon-button" id="settingsButton" title="Settings" aria-label="Settings">
+  <i data-lucide="settings"></i>
 </button>
           <button class="button button-quiet" id="authButton">
             <i data-lucide="log-in"></i>
@@ -59,7 +64,11 @@
         </div>
 
         <nav class="view-tabs" aria-label="Navigasi utama">
-          <button class="nav-item active" data-view="notes">
+          <button class="nav-item active" data-view="dashboard">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Dashboard</span>
+          </button>
+          <button class="nav-item" data-view="notes">
             <i data-lucide="file-text"></i>
             <span>Pages</span>
           </button>
@@ -99,7 +108,57 @@
       </aside>
 
       <main class="workspace">
-        <section class="workspace-view active" id="notesView" aria-label="Pages view">
+        <section class="workspace-view active" id="dashboardView" aria-label="Dashboard view">
+  <div class="dashboard-hero">
+    <div>
+      <span class="eyebrow">Personal Workspace OS</span>
+      <h1>Selamat bekerja.</h1>
+      <p>Kelola catatan, task Kanban, dan reminder dari satu tempat.</p>
+    </div>
+    <button class="button" id="dashboardNewPageButton">
+      <i data-lucide="plus"></i>
+      <span>Halaman Baru</span>
+    </button>
+  </div>
+
+  <div class="dashboard-grid">
+    <article class="stat-card">
+      <span>Total Pages</span>
+      <strong id="dashboardTotalPages">0</strong>
+    </article>
+    <article class="stat-card">
+      <span>Doing</span>
+      <strong id="dashboardDoingPages">0</strong>
+    </article>
+    <article class="stat-card">
+      <span>Review</span>
+      <strong id="dashboardReviewPages">0</strong>
+    </article>
+    <article class="stat-card">
+      <span>Reminders</span>
+      <strong id="dashboardReminderPages">0</strong>
+    </article>
+  </div>
+
+  <div class="dashboard-panels">
+    <section class="dashboard-panel">
+      <div class="panel-header">
+        <h2>Recent Pages</h2>
+        <span>Terakhir diubah</span>
+      </div>
+      <div id="dashboardRecentPages" class="dashboard-list"></div>
+    </section>
+
+    <section class="dashboard-panel">
+      <div class="panel-header">
+        <h2>Due Soon</h2>
+        <span>Reminder aktif</span>
+      </div>
+      <div id="dashboardDuePages" class="dashboard-list"></div>
+    </section>
+  </div>
+</section>
+        <section class="workspace-view" id="notesView" aria-label="Pages view">
           <section class="editor-panel">
             <div class="page-toolbar">
               <button class="icon-button" id="deletePageButton" title="Hapus halaman" aria-label="Hapus halaman">

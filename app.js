@@ -26,7 +26,7 @@ let authClient = null;
 let firestoreClient = null;
 let currentUser = null;
 let authMode = "login";
-let activeView = "notes";
+let activeView = "dashboard";
 let activeTag = "";
 let searchQuery = "";
 let syncTimer = null;
@@ -36,15 +36,28 @@ const el = {};
 
 document.addEventListener("DOMContentLoaded", () => {
   cacheElements();
+  initTheme();
   bindEvents();
   populateStatusSelects();
   initFirebase();
   renderAll();
   installReminderLoop();
+
   if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
     navigator.serviceWorker.register("service-worker.js").catch(() => {});
   }
 });
+
+function initTheme() {
+  const savedTheme = localStorage.getItem("atlas-theme") || "light";
+  document.documentElement.dataset.theme = savedTheme;
+
+  if (el.themeToggle) {
+    el.themeToggle.innerHTML = savedTheme === "dark"
+      ? `<i data-lucide="sun"></i>`
+      : `<i data-lucide="moon"></i>`;
+  }
+}
 
 function cacheElements() {
   [
@@ -55,6 +68,15 @@ function cacheElements() {
     "notificationButton",
     "settingsButton",
     "authButton",
+    "themeToggle",
+    "dashboardView",
+    "dashboardNewPageButton",
+    "dashboardTotalPages",
+    "dashboardDoingPages",
+    "dashboardReviewPages",
+    "dashboardReminderPages",
+    "dashboardRecentPages",
+    "dashboardDuePages",
     "workspaceName",
     "newPageButton",
     "pageCount",
@@ -132,11 +154,27 @@ function bindEvents() {
   el.searchInput.addEventListener("input", (event) => {
     searchQuery = event.target.value.trim().toLowerCase();
     renderSidebar();
+    renderDashboard();
     renderKanban();
     renderReminders();
   });
 
   el.newPageButton.addEventListener("click", () => openPageDialog());
+  el.dashboardNewPageButton?.addEventListener("click", () => openPageDialog());
+
+el.themeToggle?.addEventListener("click", () => {
+  const currentTheme = document.documentElement.dataset.theme || "light";
+  const nextTheme = currentTheme === "dark" ? "light" : "dark";
+
+  document.documentElement.dataset.theme = nextTheme;
+  localStorage.setItem("atlas-theme", nextTheme);
+
+  el.themeToggle.innerHTML = nextTheme === "dark"
+    ? `<i data-lucide="sun"></i>`
+    : `<i data-lucide="moon"></i>`;
+
+  refreshIcons();
+});
   el.newCardButton.addEventListener("click", () => openPageDialog("ideas"));
 
   el.pageForm.addEventListener("submit", (event) => {
@@ -467,6 +505,7 @@ function filteredPages() {
 function renderAll() {
   renderViews();
   renderSidebar();
+  renderDashboard();
   renderEditor();
   renderKanban();
   renderReminders();
@@ -479,12 +518,13 @@ function renderViews() {
     button.classList.toggle("active", button.dataset.view === activeView);
   });
   [
-    ["notes", el.notesView],
-    ["kanban", el.kanbanView],
-    ["reminders", el.remindersView],
-  ].forEach(([view, node]) => {
-    node.classList.toggle("active", activeView === view);
-  });
+  ["dashboard", el.dashboardView],
+  ["notes", el.notesView],
+  ["kanban", el.kanbanView],
+  ["reminders", el.remindersView],
+].forEach(([view, node]) => {
+  node?.classList.toggle("active", activeView === view);
+});
   refreshIcons();
 }
 
@@ -495,7 +535,7 @@ function renderSidebar() {
 
   if (!pages.length) {
     el.pageList.innerHTML = `<div class="empty-state">Tidak ada page yang cocok.</div>`;
-  } else {
+    } else {
     el.pageList.innerHTML = pages
       .map(
         (page) => `
@@ -535,6 +575,100 @@ function renderSidebar() {
     });
   });
 }
+
+function renderDashboard() {
+  if (!el.dashboardView) return;
+
+  const pages = filteredPages();
+  const doingPages = pages.filter((page) => page.status === "doing");
+  const reviewPages = pages.filter((page) => page.status === "review");
+  const reminderPages = pages.filter((page) => page.reminderAt && !page.reminderDone);
+
+  if (el.dashboardTotalPages) el.dashboardTotalPages.textContent = String(pages.length);
+  if (el.dashboardDoingPages) el.dashboardDoingPages.textContent = String(doingPages.length);
+  if (el.dashboardReviewPages) el.dashboardReviewPages.textContent = String(reviewPages.length);
+  if (el.dashboardReminderPages) el.dashboardReminderPages.textContent = String(reminderPages.length);
+
+  const recentPages = [...pages]
+    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+    .slice(0, 5);
+
+  if (el.dashboardRecentPages) {
+    el.dashboardRecentPages.innerHTML = recentPages.length
+      ? recentPages.map((page) => `
+          <button class="dashboard-list-item" data-dashboard-page="${page.id}">
+            <span class="page-dot">${escapeHtml(page.icon || "*")}</span>
+            <span>
+              <strong>${escapeHtml(page.title)}</strong>
+              <small>${formatRelative(page.updatedAt)} · ${statusTitle(page.status)}</small>
+            </span>
+          </button>
+        `).join("")
+      : `
+        <div class="empty-state">
+          <strong>Belum ada page.</strong>
+          <span>Buat halaman pertama untuk mulai bekerja.</span>
+        </div>
+      `;
+  }
+
+  const duePages = [...reminderPages]
+    .sort((a, b) => new Date(a.reminderAt) - new Date(b.reminderAt))
+    .slice(0, 5);
+
+  if (el.dashboardDuePages) {
+    el.dashboardDuePages.innerHTML = duePages.length
+      ? duePages.map((page) => `
+          <button class="dashboard-list-item" data-dashboard-page="${page.id}">
+            <span class="page-dot">${escapeHtml(page.icon || "*")}</span>
+            <span>
+              <strong>${escapeHtml(page.title)}</strong>
+              <small>${formatDate(page.reminderAt)}</small>
+            </span>
+          </button>
+        `).join("")
+      : `
+        <div class="empty-state">
+          <strong>Tidak ada reminder aktif.</strong>
+          <span>Tambahkan reminder dari halaman notes.</span>
+        </div>
+      `;
+  }
+
+  el.dashboardView.querySelectorAll("[data-dashboard-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedPageId = button.dataset.dashboardPage;
+      activeView = "notes";
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    });
+  });
+}
+
+  el.pageList.querySelectorAll("[data-page-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedPageId = button.dataset.pageId;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      el.sidebar.classList.remove("open");
+      activeView = "notes";
+      renderAll();
+    });
+  });
+
+  const tags = [...new Set(state.pages.flatMap((page) => page.tags))].sort();
+  el.tagCloud.innerHTML = tags.length
+    ? tags
+        .map((tag) => `<button class="chip ${activeTag === tag ? "active" : ""}" data-tag="${tag}">#${escapeHtml(tag)}</button>`)
+        .join("")
+    : `<span class="chip">Belum ada tag</span>`;
+
+  el.tagCloud.querySelectorAll("[data-tag]").forEach((button) => {
+    button.addEventListener("click", () => {
+      activeTag = activeTag === button.dataset.tag ? "" : button.dataset.tag;
+      renderAll();
+    });
+  });
+
 
 function renderEditor() {
   const page = getSelectedPage();

@@ -10,3 +10,26 @@
     --sidebar-width: 100%;
   }
 }
+
+@media (max-width: 900px) {
+  .dashboard-grid,
+  .dashboard-panels {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-grid,
+  .dashboard-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-hero {
+    padding: var(--space-5);
+  }
+}
