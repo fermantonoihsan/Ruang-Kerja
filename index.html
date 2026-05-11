@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="id">
+<html lang="id" data-theme="light"> 
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -7,7 +7,6 @@
     <title>Atlas Workspace</title>
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles/main.css" />
-    <link rel="stylesheet" href="styles.css" />
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
@@ -230,7 +229,7 @@
     </div>
 
     <dialog class="modal" id="authDialog">
-      <form method="dialog" class="modal-card" id="authForm">
+      <form class="modal-card" id="authForm">
         <div class="modal-header">
           <div>
             <h2 id="authTitle">Login</h2>
@@ -263,7 +262,7 @@
     </dialog>
 
     <dialog class="modal" id="settingsDialog">
-      <form method="dialog" class="modal-card" id="settingsForm">
+      <form class="modal-card" id="settingsForm">
         <div class="modal-header">
           <div>
             <h2>Firebase Settings</h2>
@@ -300,7 +299,7 @@
     </dialog>
 
     <dialog class="modal" id="pageDialog">
-      <form method="dialog" class="modal-card" id="pageForm">
+      <form class="modal-card" id="pageForm">
         <div class="modal-header">
           <div>
             <h2>Halaman Baru</h2>
