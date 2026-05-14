@@ -57,3 +57,47 @@ export function groupBy(items = [], keyOrGetter) {
     return groups;
   }, {});
 }
+export function parseTags(value = "") {
+  if (Array.isArray(value)) {
+    return value.map((tag) => String(tag).trim()).filter(Boolean);
+  }
+
+  return String(value)
+    .split(",")
+    .map((tag) => tag.trim())
+    .filter(Boolean);
+}
+
+export function stringifyTags(tags = []) {
+  if (!Array.isArray(tags)) return "";
+  return tags.join(", ");
+}
+
+export function sortByPosition(items = []) {
+  return [...items].sort((a, b) => {
+    const positionA = Number.isFinite(a?.position) ? a.position : 0;
+    const positionB = Number.isFinite(b?.position) ? b.position : 0;
+    return positionA - positionB;
+  });
+}
+
+export function isDueSoon(dateValue, days = 7) {
+  if (!dateValue) return false;
+
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return false;
+
+  const now = new Date();
+  const limit = new Date();
+  limit.setDate(now.getDate() + days);
+
+  return date >= now && date <= limit;
+}
+
+export function safeQuerySelector(selector, root = document) {
+  return root.querySelector(selector);
+}
+
+export function safeQuerySelectorAll(selector, root = document) {
+  return Array.from(root.querySelectorAll(selector));
+}

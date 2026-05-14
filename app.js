@@ -14,7 +14,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   renderApp();
   renderDashboard();
-
   try {
     await initFirebaseApp();
     await initAuth();
