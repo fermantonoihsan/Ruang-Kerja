@@ -1,168 +1,418 @@
-import {
-  generateId,
-  formatDate,
-  formatRelativeDate,
-  sanitizeText,
-} from "./utils/helpers.js";
-
-const STORAGE_KEY = "atlas_workspace_state_v1";
-const CLOUD_CONFIG_KEY = "atlas_workspace_cloud_v1";
-const FIRED_REMINDERS_KEY = "atlas_workspace_fired_reminders_v1";
-
-const DEFAULT_FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDDaZN9mPXPGrBMYykTnwguNsJp27JPLow",
-  authDomain: "atlas-workspace-af04b.firebaseapp.com",
-  projectId: "atlas-workspace-af04b",
-  storageBucket: "atlas-workspace-af04b.firebasestorage.app",
-  messagingSenderId: "1090000836099",
-  appId: "1:1090000836099:web:185ac63fa0d34b965de036",
-  measurementId: "G-NJK0P498EJ",
-};
+const STORAGE_KEY = "atlas_workspace_state_v2";
 
 const columns = [
-  { id: "ideas", title: "Ideas", color: "#315f95" },
-  { id: "doing", title: "Doing", color: "#14715f" },
-  { id: "review", title: "Review", color: "#c65f45" },
-  { id: "done", title: "Done", color: "#677076" },
+  { id: "ideas", title: "Ideas" },
+  { id: "doing", title: "Doing" },
+  { id: "review", title: "Review" },
+  { id: "done", title: "Done" },
 ];
 
 let state = loadState();
-let config = loadCloudConfig();
-let firebaseApp = null;
-let authClient = null;
-let firestoreClient = null;
-let currentUser = null;
-let authMode = "login";
 let activeView = "dashboard";
-let activeTag = "";
 let searchQuery = "";
-let syncTimer = null;
-let toastTimer = null;
 
-const el = {};
+const $ = (id) => document.getElementById(id);
 
-const uid = generateId;
-const escapeHtml = sanitizeText;
-const formatRelative = formatRelativeDate;
-
-let runtimeInitialized = false;
-
-export function initAtlasRuntime() {
-  if (runtimeInitialized) return;
-  runtimeInitialized = true;
-
-  cacheElements();
-  initTheme();
-  bindEvents();
-  populateStatusSelects();
-  initFirebase();
-  renderAll();
-  installReminderLoop();
-
-  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
-    navigator.serviceWorker.register("service-worker.js").catch(() => {});
-  }
+function uid(prefix = "id") {
+  return `${prefix}_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
 }
 
-function initTheme() {
-  const savedTheme = localStorage.getItem("atlas-theme") || "light";
-  document.documentElement.dataset.theme = savedTheme;
-
-  if (el.themeToggle) {
-    el.themeToggle.innerHTML =
-      savedTheme === "dark"
-        ? `<i data-lucide="sun"></i>`
-        : `<i data-lucide="moon"></i>`;
-  }
+function nowIso() {
+  return new Date().toISOString();
 }
 
-function cacheElements() {
-  [
-    "syncStatus",
-    "syncStatusBadge",
-    "sidebar",
-    "sidebarToggle",
-    "searchInput",
-    "notificationButton",
-    "settingsButton",
-    "authButton",
-    "themeToggle",
-    "dashboardView",
-    "dashboardNewPageButton",
-    "dashboardTotalPages",
-    "dashboardDoingPages",
-    "dashboardReviewPages",
-    "dashboardReminderPages",
-    "dashboardRecentPages",
-    "dashboardDuePages",
-    "workspaceName",
-    "newPageButton",
-    "pageCount",
-    "pageList",
-    "tagCloud",
-    "clearTagFilter",
-    "userAvatar",
-    "userName",
-    "userEmail",
-    "notesView",
-    "kanbanView",
-    "remindersView",
-    "deletePageButton",
-    "duplicatePageButton",
-    "statusSelect",
-    "titleInput",
-    "iconInput",
-    "tagsInput",
-    "reminderInput",
-    "markdownInput",
-    "previewTags",
-    "markdownPreview",
-    "kanbanMeta",
-    "kanbanBoard",
-    "newCardButton",
-    "reminderMeta",
-    "requestReminderPermission",
-    "reminderList",
-    "authDialog",
-    "authForm",
-    "authTitle",
-    "authSubtitle",
-    "authName",
-    "authEmail",
-    "authPassword",
-    "toggleAuthMode",
-    "submitAuthButton",
-    "settingsDialog",
-    "settingsForm",
-    "firebaseApiKey",
-    "firebaseAuthDomain",
-    "firebaseProjectId",
-    "firebaseAppId",
-    "clearCloudConfig",
-    "pageDialog",
-    "pageForm",
-    "newPageTitle",
-    "newPageStatus",
-    "newPageTags",
-    "toast",
-  ].forEach((id) => {
-    el[id] = document.getElementById(id);
+function escapeHtml(value = "") {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function parseTags(value = "") {
+  return String(value)
+    .split(",")
+    .map((tag) => tag.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function renderMarkdown(markdown = "") {
+  return escapeHtml(markdown)
+    .replace(/^### (.*$)/gim, "<h3>$1</h3>")
+    .replace(/^## (.*$)/gim, "<h2>$1</h2>")
+    .replace(/^# (.*$)/gim, "<h1>$1</h1>")
+    .replace(/\*\*(.*?)\*\*/gim, "<strong>$1</strong>")
+    .replace(/\n/g, "<br>");
+}
+
+function loadState() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved && Array.isArray(saved.pages)) return saved;
+  } catch {
+    // ignore corrupted localStorage
+  }
+
+  const firstPage = {
+    id: uid("page"),
+    title: "Welcome to Atlas Workspace",
+    icon: "A",
+    status: "doing",
+    tags: ["welcome", "workspace"],
+    markdown: "# Welcome to Atlas Workspace\n\nTulis catatan, susun task, dan kelola reminder dari satu tempat.",
+    reminderAt: "",
+    reminderDone: false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  return {
+    workspaceName: "Personal OS",
+    selectedPageId: firstPage.id,
+    pages: [firstPage],
+    updatedAt: nowIso(),
+  };
+}
+
+function saveState() {
+  state.updatedAt = nowIso();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function selectedPage() {
+  return state.pages.find((page) => page.id === state.selectedPageId) || state.pages[0] || null;
+}
+
+function filteredPages() {
+  const q = searchQuery.toLowerCase();
+
+  return state.pages.filter((page) => {
+    const text = `${page.title} ${page.markdown} ${page.tags.join(" ")}`.toLowerCase();
+    return !q || text.includes(q);
+  });
+}
+
+function setView(view) {
+  activeView = view;
+
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === view);
   });
 
-  el.syncStatus = el.syncStatusBadge || el.syncStatus;
+  [
+    ["dashboard", $("dashboardView")],
+    ["notes", $("notesView")],
+    ["kanban", $("kanbanView")],
+    ["reminders", $("remindersView")],
+  ].forEach(([name, node]) => {
+    if (node) node.classList.toggle("active", name === view);
+  });
+}
+
+function renderSidebar() {
+  const pages = filteredPages();
+
+  if ($("workspaceName")) $("workspaceName").textContent = state.workspaceName || "Personal OS";
+  if ($("pageCount")) $("pageCount").textContent = pages.length;
+
+  if ($("pageList")) {
+    $("pageList").innerHTML = pages
+      .map(
+        (page) => `
+          <button class="page-item ${page.id === state.selectedPageId ? "active" : ""}" data-page-id="${page.id}">
+            <span>${escapeHtml(page.icon || "P")}</span>
+            <strong>${escapeHtml(page.title)}</strong>
+          </button>
+        `,
+      )
+      .join("");
+
+    $("pageList").querySelectorAll("[data-page-id]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.selectedPageId = button.dataset.pageId;
+        saveState();
+        setView("notes");
+        renderAll();
+      });
+    });
+  }
+
+  if ($("tagCloud")) {
+    const tags = [...new Set(state.pages.flatMap((page) => page.tags || []))];
+
+    $("tagCloud").innerHTML = tags.length
+      ? tags.map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`).join("")
+      : `<span class="muted">Belum ada tag</span>`;
+  }
+}
+
+function renderDashboard() {
+  const pages = filteredPages();
+  const doing = pages.filter((page) => page.status === "doing");
+  const review = pages.filter((page) => page.status === "review");
+  const reminders = pages.filter((page) => page.reminderAt && !page.reminderDone);
+
+  if ($("dashboardTotalPages")) $("dashboardTotalPages").textContent = pages.length;
+  if ($("dashboardDoingPages")) $("dashboardDoingPages").textContent = doing.length;
+  if ($("dashboardReviewPages")) $("dashboardReviewPages").textContent = review.length;
+  if ($("dashboardReminderPages")) $("dashboardReminderPages").textContent = reminders.length;
+
+  if ($("dashboardRecentPages")) {
+    $("dashboardRecentPages").innerHTML = pages
+      .slice()
+      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+      .slice(0, 5)
+      .map(
+        (page) => `
+          <button class="dashboard-item" data-dashboard-page="${page.id}">
+            <span>${escapeHtml(page.icon || "P")}</span>
+            <strong>${escapeHtml(page.title)}</strong>
+            <small>${escapeHtml(page.status)}</small>
+          </button>
+        `,
+      )
+      .join("");
+  }
+
+  if ($("dashboardDuePages")) {
+    $("dashboardDuePages").innerHTML = reminders.length
+      ? reminders
+          .slice(0, 5)
+          .map(
+            (page) => `
+              <button class="dashboard-item" data-dashboard-page="${page.id}">
+                <span>${escapeHtml(page.icon || "P")}</span>
+                <strong>${escapeHtml(page.title)}</strong>
+                <small>${new Date(page.reminderAt).toLocaleString("id-ID")}</small>
+              </button>
+            `,
+          )
+          .join("")
+      : `<p class="empty-state">Tidak ada reminder aktif.</p>`;
+  }
+
+  document.querySelectorAll("[data-dashboard-page]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.selectedPageId = button.dataset.dashboardPage;
+      saveState();
+      setView("notes");
+      renderAll();
+    });
+  });
+}
+
+function renderEditor() {
+  const page = selectedPage();
+  if (!page) return;
+
+  if ($("titleInput")) $("titleInput").value = page.title || "";
+  if ($("iconInput")) $("iconInput").value = page.icon || "";
+  if ($("tagsInput")) $("tagsInput").value = (page.tags || []).join(", ");
+  if ($("statusSelect")) $("statusSelect").value = page.status || "ideas";
+  if ($("markdownInput")) $("markdownInput").value = page.markdown || "";
+  if ($("markdownPreview")) $("markdownPreview").innerHTML = renderMarkdown(page.markdown || "");
+  if ($("previewTags")) {
+    $("previewTags").innerHTML = (page.tags || [])
+      .map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`)
+      .join("");
+  }
+}
+
+function renderKanban() {
+  const pages = filteredPages();
+
+  if ($("kanbanMeta")) $("kanbanMeta").textContent = `${pages.length} kartu`;
+
+  if (!$("kanbanBoard")) return;
+
+  $("kanbanBoard").innerHTML = columns
+    .map((column) => {
+      const items = pages.filter((page) => page.status === column.id);
+
+      return `
+        <section class="kanban-column">
+          <div class="kanban-column-header">
+            <strong>${column.title}</strong>
+            <span>${items.length}</span>
+          </div>
+          <div class="kanban-column-body">
+            ${
+              items.length
+                ? items
+                    .map(
+                      (page) => `
+                        <article class="kanban-card" data-open-page="${page.id}">
+                          <strong>${escapeHtml(page.icon || "P")} ${escapeHtml(page.title)}</strong>
+                          <p>${escapeHtml((page.markdown || "").replaceAll("#", "").slice(0, 90))}</p>
+                        </article>
+                      `,
+                    )
+                    .join("")
+                : `<p class="empty-state">Belum ada kartu.</p>`
+            }
+          </div>
+        </section>
+      `;
+    })
+    .join("");
+
+  $("kanbanBoard").querySelectorAll("[data-open-page]").forEach((card) => {
+    card.addEventListener("click", () => {
+      state.selectedPageId = card.dataset.openPage;
+      saveState();
+      setView("notes");
+      renderAll();
+    });
+  });
+}
+
+function renderReminders() {
+  const reminders = filteredPages().filter((page) => page.reminderAt);
+
+  if ($("reminderMeta")) {
+    $("reminderMeta").textContent = reminders.length
+      ? `${reminders.length} reminder`
+      : "Tidak ada reminder";
+  }
+
+  if (!$("reminderList")) return;
+
+  $("reminderList").innerHTML = reminders.length
+    ? reminders
+        .map(
+          (page) => `
+            <article class="reminder-item">
+              <strong>${escapeHtml(page.title)}</strong>
+              <span>${new Date(page.reminderAt).toLocaleString("id-ID")}</span>
+            </article>
+          `,
+        )
+        .join("")
+    : `<p class="empty-state">Belum ada reminder.</p>`;
+}
+
+function renderUser() {
+  if ($("userName")) $("userName").textContent = "Guest";
+  if ($("userEmail")) $("userEmail").textContent = "Local workspace";
+  if ($("userAvatar")) $("userAvatar").textContent = "G";
+  if ($("syncStatus")) $("syncStatus").textContent = "Local mode";
+}
+
+function renderAll() {
+  setView(activeView);
+  renderSidebar();
+  renderDashboard();
+  renderEditor();
+  renderKanban();
+  renderReminders();
+  renderUser();
+
+  if (window.lucide?.createIcons) {
+    window.lucide.createIcons();
+  }
+}
+
+function createPage() {
+  const title = $("newPageTitle")?.value?.trim() || "Untitled";
+
+  const page = {
+    id: uid("page"),
+    title,
+    icon: title.slice(0, 1).toUpperCase(),
+    status: $("newPageStatus")?.value || "ideas",
+    tags: parseTags($("newPageTags")?.value || ""),
+    markdown: `# ${title}\n\nMulai tulis catatan di sini.`,
+    reminderAt: "",
+    reminderDone: false,
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+
+  $("pageForm")?.reset();
+  $("pageDialog")?.close();
+
+  activeView = "notes";
+  renderAll();
 }
 
 function bindEvents() {
-  el.sidebarToggle?.addEventListener("click", () => {
-    el.sidebar?.classList.toggle("open");
+  $("sidebarToggle")?.addEventListener("click", () => {
+    $("sidebar")?.classList.toggle("open");
   });
 
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
-      activeView = button.dataset.view;
-      el.sidebar?.classList.remove("open");
-      renderViews();
+      setView(button.dataset.view);
+      renderAll();
     });
+  });
+
+  $("searchInput")?.addEventListener("input", (event) => {
+    searchQuery = event.target.value.trim();
+    renderAll();
+  });
+
+  $("dashboardNewPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+  $("newPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+  $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+
+  $("pageForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    createPage();
+  });
+
+  $("titleInput")?.addEventListener("input", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.title = event.target.value || "Untitled";
+    page.updatedAt = nowIso();
+    saveState();
+    renderSidebar();
+    renderDashboard();
+    renderKanban();
+  });
+
+  $("iconInput")?.addEventListener("input", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.icon = event.target.value || "P";
+    page.updatedAt = nowIso();
+    saveState();
+    renderAll();
+  });
+
+  $("tagsInput")?.addEventListener("change", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.tags = parseTags(event.target.value);
+    page.updatedAt = nowIso();
+    saveState();
+    renderAll();
+  });
+
+  $("statusSelect")?.addEventListener("change", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.status = event.target.value;
+    page.updatedAt = nowIso();
+    saveState();
+    renderAll();
+  });
+
+  $("markdownInput")?.addEventListener("input", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.markdown = event.target.value;
+    page.updatedAt = nowIso();
+    saveState();
+    renderEditor();
+    renderDashboard();
+    renderKanban();
   });
 
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
@@ -171,1367 +421,33 @@ function bindEvents() {
     });
   });
 
-  el.searchInput?.addEventListener("input", (event) => {
-    searchQuery = event.target.value.trim().toLowerCase();
-    renderSidebar();
-    renderDashboard();
-    renderKanban();
-    renderReminders();
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
-      event.preventDefault();
-      el.searchInput?.focus();
-    }
-  });
-
-  window.addEventListener("offline", () => updateSyncStatus("Offline"));
-
-  window.addEventListener("online", () => {
-    updateSyncStatus(currentUser ? "Syncing..." : "Local mode");
-    if (currentUser) queueCloudSync(true);
-  });
-
-  el.newPageButton?.addEventListener("click", () => openPageDialog());
-  el.dashboardNewPageButton?.addEventListener("click", () => openPageDialog());
-
-  el.themeToggle?.addEventListener("click", () => {
-    const currentTheme = document.documentElement.dataset.theme || "light";
-    const nextTheme = currentTheme === "dark" ? "light" : "dark";
-
-    document.documentElement.dataset.theme = nextTheme;
-    localStorage.setItem("atlas-theme", nextTheme);
-
-    el.themeToggle.innerHTML =
-      nextTheme === "dark"
-        ? `<i data-lucide="sun"></i>`
-        : `<i data-lucide="moon"></i>`;
-
-    refreshIcons();
-  });
-
-  el.newCardButton?.addEventListener("click", () => openPageDialog("ideas"));
-
-  el.pageForm?.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    createPage({
-      title: el.newPageTitle.value.trim(),
-      status: el.newPageStatus.value,
-      tags: parseTags(el.newPageTags.value),
-    });
-
-    el.pageDialog.close();
-    el.pageForm.reset();
-  });
-
-  el.titleInput?.addEventListener("input", () => {
-    updateSelectedPage({ title: el.titleInput.value || "Untitled" });
-  });
-
-  el.iconInput?.addEventListener("input", () => {
-    updateSelectedPage({ icon: el.iconInput.value.trim() || "*" });
-  });
-
-  el.tagsInput?.addEventListener("change", () => {
-    updateSelectedPage({ tags: parseTags(el.tagsInput.value) });
-  });
-
-  el.statusSelect?.addEventListener("change", () => {
-    updateSelectedPage({ status: el.statusSelect.value });
-  });
-
-  el.reminderInput?.addEventListener("change", () => {
-    updateSelectedPage({
-      reminderAt: el.reminderInput.value ? new Date(el.reminderInput.value).toISOString() : "",
-      reminderDone: false,
-    });
-  });
-
-  el.markdownInput?.addEventListener("input", () => {
-    updateSelectedPage({ markdown: el.markdownInput.value }, false);
-  });
-
-  el.markdownInput?.addEventListener("blur", () => saveAndRender());
-
-  el.deletePageButton?.addEventListener("click", deleteSelectedPage);
-  el.duplicatePageButton?.addEventListener("click", duplicateSelectedPage);
-
-  el.clearTagFilter?.addEventListener("click", () => {
-    activeTag = "";
-    renderAll();
-  });
-
-  el.notificationButton?.addEventListener("click", requestNotifications);
-  el.requestReminderPermission?.addEventListener("click", requestNotifications);
-
-  el.settingsButton?.addEventListener("click", () => {
-    el.firebaseApiKey.value = config.apiKey || "";
-    el.firebaseAuthDomain.value = config.authDomain || "";
-    el.firebaseProjectId.value = config.projectId || "";
-    el.firebaseAppId.value = config.appId || "";
-    openDialog(el.settingsDialog);
-  });
-
-  el.settingsForm?.addEventListener("submit", (event) => {
-    event.preventDefault();
-
-    config = {
-      apiKey: el.firebaseApiKey.value.trim(),
-      authDomain: el.firebaseAuthDomain.value.trim(),
-      projectId: el.firebaseProjectId.value.trim(),
-      appId: el.firebaseAppId.value.trim(),
-    };
-
-    localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(config));
-    el.settingsDialog.close();
-    initFirebase(true);
-  });
-
-  el.clearCloudConfig?.addEventListener("click", () => {
-    config = { apiKey: "", authDomain: "", projectId: "", appId: "" };
-    localStorage.setItem(CLOUD_CONFIG_KEY, JSON.stringify(config));
-
-    firebaseApp = null;
-    authClient = null;
-    firestoreClient = null;
-    currentUser = null;
-
-    el.settingsDialog.close();
-    updateSyncStatus("Local mode");
-    renderUser();
-    toast("Cloud config dihapus. App berjalan lokal.");
-  });
-
-  el.authButton?.addEventListener("click", () => {
-    if (currentUser) {
-      signOut();
-      return;
-    }
-
-    if (!authClient) {
-      toast("Firebase belum siap. Cek konfigurasi project.");
-      return;
-    }
-
-    openAuthDialog("login");
-  });
-
-  el.toggleAuthMode?.addEventListener("click", () => {
-    openAuthDialog(authMode === "login" ? "signup" : "login");
-  });
-
-  el.authForm?.addEventListener("submit", (event) => {
-    event.preventDefault();
-    handleAuthSubmit();
+  $("themeToggle")?.addEventListener("click", () => {
+    const current = document.documentElement.dataset.theme || "light";
+    const next = current === "dark" ? "light" : "dark";
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem("atlas-theme", next);
   });
 }
 
-function populateStatusSelects() {
+function populateStatusOptions() {
   const options = columns.map((column) => `<option value="${column.id}">${column.title}</option>`).join("");
 
-  if (el.statusSelect) el.statusSelect.innerHTML = options;
-  if (el.newPageStatus) el.newPageStatus.innerHTML = options;
+  if ($("statusSelect")) $("statusSelect").innerHTML = options;
+  if ($("newPageStatus")) $("newPageStatus").innerHTML = options;
 }
 
-function loadState() {
-  const saved = safeJson(localStorage.getItem(STORAGE_KEY));
-
-  if (saved && Array.isArray(saved.pages)) {
-    return normalizeState(saved);
-  }
-
-  return createDefaultState();
+function initTheme() {
+  const theme = localStorage.getItem("atlas-theme") || "light";
+  document.documentElement.dataset.theme = theme;
 }
 
-function normalizeState(raw) {
-  const now = new Date().toISOString();
-
-  const pages = raw.pages.map((page, index) => ({
-    id: page.id || uid("page"),
-    title: page.title || "Untitled",
-    icon: page.icon || "*",
-    markdown: page.markdown || "",
-    tags: Array.isArray(page.tags) ? page.tags : parseTags(page.tags || ""),
-    status: columns.some((column) => column.id === page.status) ? page.status : "ideas",
-    position: Number.isFinite(page.position) ? page.position : index,
-    reminderAt: page.reminderAt || "",
-    reminderDone: Boolean(page.reminderDone),
-    createdAt: page.createdAt || now,
-    updatedAt: page.updatedAt || now,
-  }));
-
-  return {
-    workspaceName: raw.workspaceName || "Personal OS",
-    selectedPageId: raw.selectedPageId || pages[0]?.id || "",
-    pages,
-    updatedAt: raw.updatedAt || now,
-  };
-}
-
-function createDefaultState() {
-  const now = new Date().toISOString();
-
-  const pageA = {
-    id: uid("page"),
-    title: "Product Roadmap",
-    icon: "R",
-    status: "doing",
-    position: 0,
-    tags: ["product", "planning"],
-    reminderAt: addHours(20),
-    reminderDone: false,
-    createdAt: now,
-    updatedAt: now,
-    markdown:
-      "# Product Roadmap\n\n## Fokus minggu ini\n- [x] Rapikan struktur workspace\n- [ ] Validasi user onboarding\n- [ ] Siapkan release checklist\n\n> Semua page otomatis muncul sebagai kartu Kanban.\n\n## Metric\n**Activation:** user membuat 3 page pertama dalam 1 sesi.",
-  };
-
-  const pageB = {
-    id: uid("page"),
-    title: "Meeting Notes",
-    icon: "M",
-    status: "review",
-    position: 0,
-    tags: ["meeting"],
-    reminderAt: addHours(44),
-    reminderDone: false,
-    createdAt: now,
-    updatedAt: now,
-    markdown:
-      "# Meeting Notes\n\nTanggal: Jumat\n\n## Agenda\n1. Review board\n2. Prioritas sprint\n3. Risiko release\n\n## Keputusan\n- Pakai Firebase Auth untuk login\n- Simpan workspace ke Cloud Firestore dengan Security Rules",
-  };
-
-  const pageC = {
-    id: uid("page"),
-    title: "Research Vault",
-    icon: "V",
-    status: "ideas",
-    position: 0,
-    tags: ["research", "ideas"],
-    reminderAt: "",
-    reminderDone: false,
-    createdAt: now,
-    updatedAt: now,
-    markdown:
-      '# Research Vault\n\nGunakan area ini untuk menyimpan link, insight, dan draft.\n\n```js\nconst nextStep = "ship useful workspace";\n```\n\n[Firebase](https://firebase.google.com) cocok untuk auth, Firestore sync, dan hosting.',
-  };
-
-  const pageD = {
-    id: uid("page"),
-    title: "Launch Checklist",
-    icon: "L",
-    status: "done",
-    position: 0,
-    tags: ["launch", "ops"],
-    reminderAt: "",
-    reminderDone: true,
-    createdAt: now,
-    updatedAt: now,
-    markdown:
-      "# Launch Checklist\n\n- [x] Responsive layout\n- [x] Markdown preview\n- [x] Kanban drag-drop\n- [x] Reminder center\n- [ ] Deploy ke Vercel atau Netlify",
-  };
-
-  return {
-    workspaceName: "Personal OS",
-    selectedPageId: pageA.id,
-    pages: [pageA, pageB, pageC, pageD],
-    updatedAt: now,
-  };
-}
-
-function loadCloudConfig() {
-  const saved = safeJson(localStorage.getItem(CLOUD_CONFIG_KEY));
-
-  if (saved) {
-    return { ...DEFAULT_FIREBASE_CONFIG, ...saved };
-  }
-
-  return { ...DEFAULT_FIREBASE_CONFIG };
-}
-
-function safeJson(value) {
-  try {
-    return value ? JSON.parse(value) : null;
-  } catch {
-    return null;
-  }
-}
-
-function addHours(hours) {
-  return new Date(Date.now() + hours * 60 * 60 * 1000).toISOString();
-}
-
-function saveAndRender(sync = true) {
-  state.updatedAt = new Date().toISOString();
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-
-  if (sync && currentUser && firestoreClient) {
-    queueCloudSync();
-  }
-
+export function initAtlasRuntime() {
+  initTheme();
+  populateStatusOptions();
+  bindEvents();
   renderAll();
-}
 
-function updateSelectedPage(patch, render = true) {
-  const page = getSelectedPage();
-  if (!page) return;
-
-  Object.assign(page, patch, { updatedAt: new Date().toISOString() });
-
-  if (patch.markdown !== undefined) {
-    state.updatedAt = new Date().toISOString();
-    renderPreview(page);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    queueCloudSync();
-    return;
-  }
-
-  if (render) saveAndRender();
-}
-
-function getSelectedPage() {
-  return state.pages.find((page) => page.id === state.selectedPageId) || state.pages[0] || null;
-}
-
-function createPage({ title, status = "ideas", tags = [] }) {
-  const safeTitle = title || "Untitled";
-
-  const newPage = {
-    id: uid("page"),
-    title: safeTitle,
-    icon: safeTitle.trim().slice(0, 1).toUpperCase() || "U",
-    status,
-    position: getPagesByStatus(status).length,
-    tags,
-    reminderAt: "",
-    reminderDone: false,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    markdown: `# ${safeTitle}\n\nMulai tulis catatan di sini.\n\n- [ ] Langkah pertama`,
-  };
-
-  state.pages.push(newPage);
-  state.selectedPageId = newPage.id;
-  activeView = "notes";
-
-  saveAndRender();
-  toast("Halaman baru dibuat.");
-}
-
-function deleteSelectedPage() {
-  if (state.pages.length <= 1) {
-    toast("Workspace harus punya minimal satu halaman.");
-    return;
-  }
-
-  const page = getSelectedPage();
-  if (!page) return;
-
-  const ok = confirm(`Hapus "${page.title}"?`);
-  if (!ok) return;
-
-  state.pages = state.pages.filter((item) => item.id !== page.id);
-  state.selectedPageId = state.pages[0]?.id || "";
-
-  saveAndRender();
-  toast("Halaman dihapus.");
-}
-
-function duplicateSelectedPage() {
-  const page = getSelectedPage();
-  if (!page) return;
-
-  const copy = {
-    ...page,
-    id: uid("page"),
-    title: `${page.title} Copy`,
-    position: getPagesByStatus(page.status).length,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  };
-
-  state.pages.push(copy);
-  state.selectedPageId = copy.id;
-
-  saveAndRender();
-  toast("Halaman diduplikasi.");
-}
-
-function parseTags(value) {
-  if (Array.isArray(value)) {
-    return value
-      .map((tag) => String(tag).trim().toLowerCase())
-      .filter(Boolean)
-      .filter((tag, index, list) => list.indexOf(tag) === index);
-  }
-
-  return String(value || "")
-    .split(",")
-    .map((tag) => tag.trim().toLowerCase())
-    .filter(Boolean)
-    .filter((tag, index, list) => list.indexOf(tag) === index);
-}
-
-function getPagesByStatus(status) {
-  return state.pages
-    .filter((page) => page.status === status)
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || String(a.updatedAt).localeCompare(String(b.updatedAt)));
-}
-
-function filteredPages() {
-  return state.pages.filter((page) => {
-    const haystack = `${page.title} ${page.markdown} ${page.tags.join(" ")}`.toLowerCase();
-    const matchesQuery = !searchQuery || haystack.includes(searchQuery);
-    const matchesTag = !activeTag || page.tags.includes(activeTag);
-
-    return matchesQuery && matchesTag;
-  });
-}
-
-function renderAll() {
-  renderViews();
-  renderSidebar();
-  renderDashboard();
-  renderEditor();
-  renderKanban();
-  renderReminders();
-  renderUser();
-  refreshIcons();
-}
-
-function renderViews() {
-  document.querySelectorAll("[data-view]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.view === activeView);
-  });
-
-  [
-    ["dashboard", el.dashboardView],
-    ["notes", el.notesView],
-    ["kanban", el.kanbanView],
-    ["reminders", el.remindersView],
-  ].forEach(([view, node]) => {
-    node?.classList.toggle("active", activeView === view);
-  });
-
-  refreshIcons();
-}
-
-function renderSidebar() {
-  const pages = filteredPages().sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
-
-  if (el.workspaceName) el.workspaceName.textContent = state.workspaceName;
-  if (el.pageCount) el.pageCount.textContent = String(pages.length);
-
-  if (!pages.length) {
-    const title = searchQuery || activeTag ? "No matching pages" : "No pages yet";
-    const subtitle =
-      searchQuery || activeTag
-        ? "Try a different search or clear the tag filter."
-        : "Create a page to start shaping this workspace.";
-
-    el.pageList.innerHTML = emptyState("file-text", title, subtitle, "New Page", "data-empty-new-page");
-  } else {
-    el.pageList.innerHTML = pages
-      .map(
-        (page) => `
-          <button class="page-item ${page.id === state.selectedPageId ? "active" : ""}" data-page-id="${page.id}">
-            <span class="page-icon">${escapeHtml(page.icon || "*")}</span>
-            <span>
-              <strong>${escapeHtml(page.title)}</strong>
-              <small>${formatRelative(page.updatedAt)} - ${statusTitle(page.status)}</small>
-            </span>
-          </button>
-        `,
-      )
-      .join("");
-  }
-
-  el.pageList?.querySelectorAll("[data-page-id]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.selectedPageId = button.dataset.pageId;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      el.sidebar?.classList.remove("open");
-      activeView = "notes";
-      renderAll();
-    });
-  });
-
-  el.pageList?.querySelector("[data-empty-new-page]")?.addEventListener("click", () => openPageDialog());
-
-  const tags = [...new Set(state.pages.flatMap((page) => page.tags))].sort();
-
-  if (el.tagCloud) {
-    el.tagCloud.innerHTML = tags.length
-      ? tags
-          .map((tag) => `<button class="chip ${activeTag === tag ? "active" : ""}" data-tag="${tag}">#${escapeHtml(tag)}</button>`)
-          .join("")
-      : emptyState("tag", "No tags yet", "Add comma-separated tags to any page to build your tag list.");
-
-    el.tagCloud.querySelectorAll("[data-tag]").forEach((button) => {
-      button.addEventListener("click", () => {
-        activeTag = activeTag === button.dataset.tag ? "" : button.dataset.tag;
-        renderAll();
-      });
-    });
+  if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {
+    navigator.serviceWorker.register("service-worker.js").catch(() => {});
   }
 }
-
-function renderDashboardLegacy() {
-  renderDashboard();
-}
-
-function renderDashboard() {
-  if (!el.dashboardView) return;
-
-  const pages = filteredPages();
-  const doingPages = pages.filter((page) => page.status === "doing");
-  const reviewPages = pages.filter((page) => page.status === "review");
-  const reminderPages = pages.filter((page) => page.reminderAt && !page.reminderDone);
-
-  if (el.dashboardTotalPages) el.dashboardTotalPages.textContent = String(pages.length);
-  if (el.dashboardDoingPages) el.dashboardDoingPages.textContent = String(doingPages.length);
-  if (el.dashboardReviewPages) el.dashboardReviewPages.textContent = String(reviewPages.length);
-  if (el.dashboardReminderPages) el.dashboardReminderPages.textContent = String(reminderPages.length);
-
-  const recentPages = [...pages]
-    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-    .slice(0, 5);
-
-  if (el.dashboardRecentPages) {
-    el.dashboardRecentPages.innerHTML = recentPages.length
-      ? recentPages
-          .map(
-            (page) => `
-              <button class="dashboard-list-item" data-dashboard-page="${page.id}">
-                <span class="page-dot">${escapeHtml(page.icon || "*")}</span>
-                <span>
-                  <strong>${escapeHtml(page.title)}</strong>
-                  <small>${formatRelative(page.updatedAt)} - ${statusTitle(page.status)}</small>
-                </span>
-              </button>
-            `,
-          )
-          .join("")
-      : emptyState("clock", "No recent pages", "Create or edit a page and it will appear here.", "New Page", "data-dashboard-new-page");
-  }
-
-  const duePages = [...reminderPages]
-    .sort((a, b) => new Date(a.reminderAt) - new Date(b.reminderAt))
-    .slice(0, 5);
-
-  if (el.dashboardDuePages) {
-    el.dashboardDuePages.innerHTML = duePages.length
-      ? duePages
-          .map(
-            (page) => `
-              <button class="dashboard-list-item" data-dashboard-page="${page.id}">
-                <span class="page-dot">${escapeHtml(page.icon || "*")}</span>
-                <span>
-                  <strong>${escapeHtml(page.title)}</strong>
-                  <small>${formatDate(page.reminderAt)}</small>
-                </span>
-              </button>
-            `,
-          )
-          .join("")
-      : emptyState("bell", "No reminders due soon", "Add a reminder to a page to keep important work visible.");
-  }
-
-  el.dashboardView.querySelector("[data-dashboard-new-page]")?.addEventListener("click", () => openPageDialog());
-
-  el.dashboardView.querySelectorAll("[data-dashboard-page]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.selectedPageId = button.dataset.dashboardPage;
-      activeView = "notes";
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      renderAll();
-    });
-  });
-}
-
-function renderEditor() {
-  const page = getSelectedPage();
-  if (!page) return;
-
-  if (el.titleInput) el.titleInput.value = page.title;
-  if (el.iconInput) el.iconInput.value = page.icon || "";
-  if (el.tagsInput) el.tagsInput.value = page.tags.join(", ");
-  if (el.statusSelect) el.statusSelect.value = page.status;
-  if (el.reminderInput) el.reminderInput.value = page.reminderAt ? toLocalInputValue(page.reminderAt) : "";
-  if (el.markdownInput) el.markdownInput.value = page.markdown || "";
-
-  renderPreview(page);
-}
-
-function renderPreview(page) {
-  if (el.previewTags) {
-    el.previewTags.innerHTML = page.tags.map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`).join("");
-  }
-
-  if (el.markdownPreview) {
-    el.markdownPreview.innerHTML = renderMarkdown(page.markdown || "");
-  }
-}
-
-function renderKanban() {
-  const pages = filteredPages();
-
-  if (el.kanbanMeta) {
-    el.kanbanMeta.textContent = `${pages.length} kartu`;
-  }
-
-  if (!el.kanbanBoard) return;
-
-  el.kanbanBoard.innerHTML = columns
-    .map((column) => {
-      const items = pages
-        .filter((page) => page.status === column.id)
-        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-      const cards = items.length
-        ? items
-            .map(
-              (page) => `
-                <article class="kanban-card" draggable="true" data-card-id="${page.id}" data-status="${column.id}">
-                  <strong>${escapeHtml(page.icon || "*")} ${escapeHtml(page.title)}</strong>
-                  <p>${escapeHtml(summary(page.markdown))}</p>
-                  <div class="chip-row">
-                    ${page.tags.slice(0, 3).map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`).join("")}
-                  </div>
-                  <div class="card-footer">
-                    <small>${page.reminderAt ? formatDate(page.reminderAt) : formatRelative(page.updatedAt)}</small>
-                    <button class="text-button" data-open-page="${page.id}">Open</button>
-                  </div>
-                </article>
-              `,
-            )
-            .join("")
-        : emptyState("kanban-square", "No cards in this column", "Drop a page here or create a new card.", "New Card", `data-empty-card="${column.id}"`);
-
-      return `
-        <section class="kanban-column" data-column-id="${column.id}">
-          <div class="column-header">
-            <strong><span class="status-dot" style="background:${column.color}"></span>${column.title}</strong>
-            <span>${items.length}</span>
-          </div>
-          <div class="kanban-list">${cards}</div>
-        </section>
-      `;
-    })
-    .join("");
-
-  bindKanbanEvents();
-
-  el.kanbanBoard.querySelectorAll("[data-empty-card]").forEach((button) => {
-    button.addEventListener("click", () => openPageDialog(button.dataset.emptyCard));
-  });
-
-  refreshIcons();
-}
-
-function bindKanbanEvents() {
-  if (!el.kanbanBoard) return;
-
-  el.kanbanBoard.querySelectorAll(".kanban-card").forEach((card) => {
-    card.addEventListener("dragstart", (event) => {
-      event.dataTransfer.setData("text/plain", card.dataset.cardId);
-      card.classList.add("dragging");
-    });
-
-    card.addEventListener("dragend", () => {
-      card.classList.remove("dragging");
-      el.kanbanBoard.querySelectorAll(".kanban-column").forEach((column) => column.classList.remove("drag-over"));
-    });
-
-    card.addEventListener("dragover", (event) => event.preventDefault());
-
-    card.addEventListener("drop", (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      movePage(event.dataTransfer.getData("text/plain"), card.dataset.status, card.dataset.cardId);
-    });
-  });
-
-  el.kanbanBoard.querySelectorAll(".kanban-column").forEach((column) => {
-    column.addEventListener("dragover", (event) => {
-      event.preventDefault();
-      column.classList.add("drag-over");
-    });
-
-    column.addEventListener("dragleave", () => column.classList.remove("drag-over"));
-
-    column.addEventListener("drop", (event) => {
-      event.preventDefault();
-      column.classList.remove("drag-over");
-      movePage(event.dataTransfer.getData("text/plain"), column.dataset.columnId);
-    });
-  });
-
-  el.kanbanBoard.querySelectorAll("[data-open-page]").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.selectedPageId = button.dataset.openPage;
-      activeView = "notes";
-      saveAndRender(false);
-    });
-  });
-}
-
-function movePage(pageId, targetStatus, beforeId = "") {
-  const page = state.pages.find((item) => item.id === pageId);
-  if (!page || !targetStatus) return;
-
-  page.status = targetStatus;
-  page.updatedAt = new Date().toISOString();
-
-  const siblings = state.pages
-    .filter((item) => item.status === targetStatus && item.id !== pageId)
-    .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
-
-  const insertIndex = beforeId ? Math.max(0, siblings.findIndex((item) => item.id === beforeId)) : siblings.length;
-
-  siblings.splice(insertIndex, 0, page);
-
-  siblings.forEach((item, index) => {
-    item.position = index;
-  });
-
-  state.selectedPageId = page.id;
-
-  saveAndRender();
-}
-
-function renderReminders() {
-  const reminders = filteredPages()
-    .filter((page) => page.reminderAt)
-    .sort((a, b) => new Date(a.reminderAt) - new Date(b.reminderAt));
-
-  const pending = reminders.filter((page) => !page.reminderDone);
-
-  if (el.reminderMeta) {
-    el.reminderMeta.textContent = pending.length ? `${pending.length} aktif` : "Tidak ada reminder aktif";
-  }
-
-  if (!el.reminderList) return;
-
-  if (!reminders.length) {
-    el.reminderList.innerHTML = emptyState("bell", "No reminders", "Set a date on any page to track it here.");
-    refreshIcons();
-    return;
-  }
-
-  el.reminderList.innerHTML = reminders
-    .map((page) => {
-      const due = !page.reminderDone && new Date(page.reminderAt) <= new Date();
-
-      return `
-        <article class="reminder-card ${due ? "due" : ""}">
-          <div>
-            <strong>${escapeHtml(page.icon || "*")} ${escapeHtml(page.title)}</strong>
-            <small>${page.reminderDone ? "Selesai" : due ? "Jatuh tempo" : formatDate(page.reminderAt)}</small>
-            <div class="chip-row">
-              ${page.tags.map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`).join("")}
-            </div>
-          </div>
-          <div class="reminder-actions">
-            <button class="button button-quiet" data-snooze="${page.id}">
-              <i data-lucide="clock-3"></i>
-              <span>Snooze</span>
-            </button>
-            <button class="button" data-done="${page.id}">
-              <i data-lucide="check"></i>
-              <span>${page.reminderDone ? "Aktifkan" : "Done"}</span>
-            </button>
-          </div>
-        </article>
-      `;
-    })
-    .join("");
-
-  el.reminderList.querySelectorAll("[data-snooze]").forEach((button) => {
-    button.addEventListener("click", () => snoozeReminder(button.dataset.snooze));
-  });
-
-  el.reminderList.querySelectorAll("[data-done]").forEach((button) => {
-    button.addEventListener("click", () => toggleReminderDone(button.dataset.done));
-  });
-
-  refreshIcons();
-}
-
-function snoozeReminder(pageId) {
-  const page = state.pages.find((item) => item.id === pageId);
-  if (!page) return;
-
-  page.reminderAt = addHours(24);
-  page.reminderDone = false;
-  page.updatedAt = new Date().toISOString();
-
-  saveAndRender();
-  toast("Reminder ditunda 24 jam.");
-}
-
-function toggleReminderDone(pageId) {
-  const page = state.pages.find((item) => item.id === pageId);
-  if (!page) return;
-
-  page.reminderDone = !page.reminderDone;
-  page.updatedAt = new Date().toISOString();
-
-  saveAndRender();
-}
-
-function installReminderLoop() {
-  checkReminders();
-  setInterval(checkReminders, 30000);
-}
-
-function checkReminders() {
-  const fired = new Set(safeJson(localStorage.getItem(FIRED_REMINDERS_KEY)) || []);
-  const now = new Date();
-
-  const duePages = state.pages.filter((page) => {
-    if (!page.reminderAt || page.reminderDone) return false;
-
-    const key = `${page.id}:${page.reminderAt}`;
-
-    return new Date(page.reminderAt) <= now && !fired.has(key);
-  });
-
-  duePages.forEach((page) => {
-    const key = `${page.id}:${page.reminderAt}`;
-
-    fired.add(key);
-    toast(`Reminder: ${page.title}`);
-
-    if (window.Notification?.permission === "granted") {
-      new Notification(page.title, {
-        body: summary(page.markdown) || "Reminder workspace",
-        tag: key,
-      });
-    }
-  });
-
-  if (duePages.length) {
-    localStorage.setItem(FIRED_REMINDERS_KEY, JSON.stringify([...fired].slice(-200)));
-    renderReminders();
-  }
-}
-
-async function requestNotifications() {
-  if (!("Notification" in window)) {
-    toast("Browser ini belum mendukung notification.");
-    return;
-  }
-
-  const permission = await Notification.requestPermission();
-
-  toast(permission === "granted" ? "Reminder aktif." : "Reminder belum diizinkan.");
-}
-
-function renderUser() {
-  const user = currentUser;
-  const displayName = user?.displayName || user?.email?.split("@")[0] || "Guest";
-
-  if (el.userName) el.userName.textContent = displayName;
-  if (el.userEmail) el.userEmail.textContent = user?.email || (authClient ? "Belum login" : "Local workspace");
-  if (el.userAvatar) el.userAvatar.textContent = displayName.slice(0, 1).toUpperCase();
-
-  if (el.authButton) {
-    if (currentUser) {
-      el.authButton.innerHTML = `<i data-lucide="log-out"></i><span>Logout</span>`;
-    } else {
-      el.authButton.innerHTML = `<i data-lucide="log-in"></i><span>Login</span>`;
-    }
-  }
-
-  refreshIcons();
-}
-
-function initFirebase(forceMessage = false) {
-  if (!config.apiKey || !config.authDomain || !config.projectId || !config.appId) {
-    firebaseApp = null;
-    authClient = null;
-    firestoreClient = null;
-    currentUser = null;
-
-    updateSyncStatus("Local mode");
-    renderUser();
-
-    return;
-  }
-
-  if (!window.firebase?.initializeApp) {
-    updateSyncStatus("Error");
-    return;
-  }
-
-  try {
-    const appName = `atlas-${config.projectId}`;
-    const existingApp = window.firebase.apps.find((app) => app.name === appName);
-
-    if (existingApp) {
-      firebaseApp = existingApp;
-    } else {
-      firebaseApp = window.firebase.initializeApp(config, appName);
-    }
-
-  authClient = window.firebase.auth(firebaseApp);
-  firestoreClient = window.firebase.firestore(firebaseApp);
-
-// Disabled temporarily to prevent Firestore startup conflict.
-// Persistence must be enabled before any Firestore operation.
-// Since Atlas Workspace is already local-first via localStorage,
-// cloud sync can run safely without Firestore offline persistence.
-// firestoreClient.enablePersistence({ synchronizeTabs: true }).catch(() => {});
-  } catch (error) {
-    firebaseApp = null;
-    authClient = null;
-    firestoreClient = null;
-
-    updateSyncStatus("Error");
-    toast(error.message);
-    renderUser();
-
-    return;
-  }
-
-  authClient.onAuthStateChanged((user) => {
-    currentUser = user;
-    renderUser();
-
-    if (user) {
-      pullCloudState();
-    } else {
-      updateSyncStatus("Local mode");
-      if (forceMessage) toast("Cloud config tersimpan. Silakan login.");
-    }
-  });
-}
-
-function openAuthDialog(mode) {
-  authMode = mode;
-
-  const isSignup = mode === "signup";
-
-  el.authTitle.textContent = isSignup ? "Buat Akun" : "Login";
-  el.authSubtitle.textContent = isSignup ? "Akun Firebase untuk workspace sync." : "Masuk untuk cloud sync.";
-  el.authName.closest("label").style.display = isSignup ? "grid" : "none";
-  el.toggleAuthMode.textContent = isSignup ? "Sudah punya akun" : "Buat akun";
-  el.submitAuthButton.innerHTML = isSignup
-    ? `<i data-lucide="user-plus"></i><span>Daftar</span>`
-    : `<i data-lucide="log-in"></i><span>Login</span>`;
-
-  openDialog(el.authDialog);
-  refreshIcons();
-}
-
-async function handleAuthSubmit() {
-  if (!authClient) return;
-
-  const email = el.authEmail.value.trim();
-  const password = el.authPassword.value;
-
-  updateSyncStatus("Authenticating...");
-
-  try {
-    const credential =
-      authMode === "signup"
-        ? await authClient.createUserWithEmailAndPassword(email, password)
-        : await authClient.signInWithEmailAndPassword(email, password);
-
-    if (authMode === "signup") {
-      const displayName = el.authName.value.trim() || email.split("@")[0];
-      await credential.user.updateProfile({ displayName });
-    }
-
-    currentUser = credential.user;
-  } catch (error) {
-    updateSyncStatus("Error");
-    toast(firebaseErrorMessage(error));
-    return;
-  }
-
-  el.authDialog.close();
-  el.authForm.reset();
-
-  toast(authMode === "signup" ? "Akun Firebase dibuat." : "Login berhasil.");
-
-  if (currentUser) pullCloudState();
-}
-
-async function signOut() {
-  if (!authClient) return;
-
-  await queueCloudSync(true);
-  await authClient.signOut();
-
-  currentUser = null;
-
-  updateSyncStatus("Local mode");
-  renderUser();
-  toast("Logout berhasil.");
-}
-
-async function pullCloudState() {
-  if (!firestoreClient || !currentUser) return;
-
-  updateSyncStatus("Syncing...");
-
-  let snapshot;
-
-  try {
-    snapshot = await workspaceDocRef().get();
-  } catch (error) {
-    updateSyncStatus("Error");
-    toast(firebaseErrorMessage(error));
-    return;
-  }
-
-  if (snapshot.exists) {
-    const remote = snapshot.data();
-    const remoteData = remote?.data;
-    const remoteUpdatedAt = remote?.updatedAt?.toDate?.() || remote?.updatedAt || remoteData?.updatedAt || 0;
-    const remoteUpdated = new Date(remoteUpdatedAt).getTime();
-    const localUpdated = new Date(state.updatedAt || 0).getTime();
-
-    if (remoteData && remoteUpdated > localUpdated) {
-      state = normalizeState(remoteData);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-      renderAll();
-      toast("Workspace cloud dimuat.");
-    } else {
-      await queueCloudSync(true);
-    }
-  } else {
-    await queueCloudSync(true);
-  }
-
-  updateSyncStatus(`Synced ${formatTime(new Date())}`);
-}
-
-function queueCloudSync(immediate = false) {
-  if (!firestoreClient || !currentUser) return Promise.resolve();
-
-  if (syncTimer) clearTimeout(syncTimer);
-
-  if (immediate) {
-    return pushCloudState();
-  }
-
-  syncTimer = setTimeout(pushCloudState, 900);
-  updateSyncStatus("Syncing...");
-
-  return Promise.resolve();
-}
-
-async function pushCloudState() {
-  if (!firestoreClient || !currentUser) return;
-
-  updateSyncStatus("Syncing...");
-
-  try {
-    await workspaceDocRef().set(
-      {
-        data: state,
-        updatedAt: window.firebase.firestore.FieldValue.serverTimestamp(),
-        ownerEmail: currentUser.email || "",
-      },
-      { merge: true },
-    );
-  } catch (error) {
-    updateSyncStatus("Error");
-    toast(firebaseErrorMessage(error));
-    return;
-  }
-
-  updateSyncStatus(`Synced ${formatTime(new Date())}`);
-}
-
-function workspaceDocRef() {
-  return firestoreClient.collection("users").doc(currentUser.uid).collection("private").doc("workspace");
-}
-
-function firebaseErrorMessage(error) {
-  const messages = {
-    "auth/email-already-in-use": "Email sudah terdaftar.",
-    "auth/invalid-email": "Format email tidak valid.",
-    "auth/invalid-credential": "Email atau password salah.",
-    "auth/weak-password": "Password minimal 6 karakter.",
-    "permission-denied": "Firestore rules menolak akses. Cek firebase.rules.",
-  };
-
-  return messages[error?.code] || error?.message || "Firebase error.";
-}
-
-function updateSyncStatus(message) {
-  if (!el.syncStatus) return;
-
-  const normalized = String(message || "").toLowerCase();
-
-  let stateClass = "local";
-
-  if (normalized.includes("sync")) stateClass = "syncing";
-  if (normalized.includes("synced")) stateClass = "synced";
-  if (normalized.includes("offline")) stateClass = "error";
-  if (normalized.includes("error") || normalized.includes("gagal") || normalized.includes("belum siap")) stateClass = "error";
-  if (normalized.includes("local")) stateClass = "local";
-
-  el.syncStatus.textContent = message || "Local mode";
-  el.syncStatus.className = `sync-badge ${stateClass}`;
-}
-
-function emptyState(icon, title, subtitle, actionText = "", actionAttribute = "") {
-  const action =
-    actionText && actionAttribute
-      ? `<button class="button button-quiet empty-action" ${actionAttribute}>${escapeHtml(actionText)}</button>`
-      : "";
-
-  return `
-    <div class="empty-state">
-      <i data-lucide="${escapeHtml(icon)}"></i>
-      <strong>${escapeHtml(title)}</strong>
-      <span>${escapeHtml(subtitle)}</span>
-      ${action}
-    </div>
-  `;
-}
-
-function openPageDialog(status = "ideas") {
-  if (!el.pageDialog) return;
-
-  if (el.newPageStatus) el.newPageStatus.value = status;
-
-  openDialog(el.pageDialog);
-
-  setTimeout(() => el.newPageTitle?.focus(), 50);
-}
-
-function openDialog(dialog) {
-  if (!dialog) return;
-
-  if (typeof dialog.showModal === "function") {
-    dialog.showModal();
-  } else {
-    dialog.setAttribute("open", "");
-  }
-
-  refreshIcons();
-}
-
-function renderMarkdown(markdown) {
-  const lines = String(markdown || "").replace(/\r\n/g, "\n").split("\n");
-  const html = [];
-
-  let listType = "";
-  let inCode = false;
-  let codeLines = [];
-
-  const closeList = () => {
-    if (listType) {
-      html.push(`</${listType}>`);
-      listType = "";
-    }
-  };
-
-  lines.forEach((line) => {
-    if (line.trim().startsWith("```")) {
-      if (inCode) {
-        html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-        codeLines = [];
-        inCode = false;
-      } else {
-        closeList();
-        inCode = true;
-      }
-      return;
-    }
-
-    if (inCode) {
-      codeLines.push(line);
-      return;
-    }
-
-    if (!line.trim()) {
-      closeList();
-      return;
-    }
-
-    const heading = line.match(/^(#{1,3})\s+(.+)$/);
-
-    if (heading) {
-      closeList();
-      const level = heading[1].length;
-      html.push(`<h${level}>${inlineMarkdown(heading[2])}</h${level}>`);
-      return;
-    }
-
-    if (line.startsWith(">")) {
-      closeList();
-      html.push(`<blockquote>${inlineMarkdown(line.replace(/^>\s?/, ""))}</blockquote>`);
-      return;
-    }
-
-    const task = line.match(/^-\s+\[(x| )\]\s+(.+)$/i);
-
-    if (task) {
-      if (listType !== "ul") {
-        closeList();
-        html.push("<ul>");
-        listType = "ul";
-      }
-
-      const checked = task[1].toLowerCase() === "x" ? "checked" : "";
-      html.push(`<li><input class="task-check" type="checkbox" ${checked} disabled />${inlineMarkdown(task[2])}</li>`);
-      return;
-    }
-
-    const unordered = line.match(/^[-*]\s+(.+)$/);
-
-    if (unordered) {
-      if (listType !== "ul") {
-        closeList();
-        html.push("<ul>");
-        listType = "ul";
-      }
-
-      html.push(`<li>${inlineMarkdown(unordered[1])}</li>`);
-      return;
-    }
-
-    const ordered = line.match(/^\d+\.\s+(.+)$/);
-
-    if (ordered) {
-      if (listType !== "ol") {
-        closeList();
-        html.push("<ol>");
-        listType = "ol";
-      }
-
-      html.push(`<li>${inlineMarkdown(ordered[1])}</li>`);
-      return;
-    }
-
-    closeList();
-    html.push(`<p>${inlineMarkdown(line)}</p>`);
-  });
-
-  if (inCode) {
-    html.push(`<pre><code>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
-  }
-
-  closeList();
-
-  return html.join("\n") || `<p>Preview markdown akan muncul di sini.</p>`;
-}
-
-function inlineMarkdown(value) {
-  return escapeHtml(value)
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, `<a href="$2" target="_blank" rel="noreferrer">$1</a>`)
-    .replace(/`([^`]+)`/g, "<code>$1</code>")
-    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
-    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
-}
-
-function summary(markdown) {
-  return String(markdown || "")
-    .replace(/```[\s\S]*?```/g, "")
-    .replace(/[#>*_`[\]()]/g, "")
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 2)
-    .join(" ")
-    .slice(0, 120);
-}
-
-function statusTitle(status) {
-  return columns.find((column) => column.id === status)?.title || "Ideas";
-}
-
-function formatTime(date) {
-  return new Intl.DateTimeFormat("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-}
-
-function toLocalInputValue(dateValue) {
-  const date = new Date(dateValue);
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - offset * 60 * 1000);
-
-  return local.toISOString().slice(0, 16);
-}
-
-function toast(message) {
-  if (!message || !el.toast) return;
-
-  el.toast.textContent = message;
-  el.toast.classList.add("show");
-
-  clearTimeout(toastTimer);
-
-  toastTimer = setTimeout(() => {
-    el.toast.classList.remove("show");
-  }, 2800);
-}
-
-function refreshIcons() {
-  if (window.lucide) {
-    window.lucide.createIcons();
-  }
-}
-
-export function getRuntimeState() {
-  return state;
-}
-
-export function getRuntimeConfig() {
-  return config;
-}
-
-export function getRuntimeCurrentUser() {
-  return currentUser;
-}
-
-export function getRuntimeSyncStatus() {
-  return el.syncStatus?.textContent || "Local mode";
-}
-
-export function setRuntimeActiveView(viewName) {
-  activeView = viewName;
-  renderViews();
-}
-
-export {
-  initTheme as initRuntimeTheme,
-  initFirebase as initRuntimeFirebase,
-  renderAll as renderRuntimeApp,
-  renderSidebar as renderRuntimeSidebar,
-  renderViews as renderRuntimeTopbar,
-  emptyState as renderRuntimeEmptyState,
-  updateSyncStatus as renderRuntimeSyncBadge,
-  updateSyncStatus as updateRuntimeSyncStatus,
-  openDialog as openRuntimeDialog,
-  openPageDialog as openRuntimePageDialog,
-  renderDashboard,
-  renderEditor as renderNotes,
-  createPage,
-  updateSelectedPage as updatePage,
-  deleteSelectedPage as deletePage,
-  duplicateSelectedPage as duplicatePage,
-  getSelectedPage as selectPage,
-  filteredPages as filterPages,
-  renderKanban,
-  movePage as updatePageStatus,
-  bindKanbanEvents as initKanbanDragAndDrop,
-  renderReminders,
-  toggleReminderDone as completeReminder,
-  snoozeReminder as updateReminder,
-  renderUser as renderAuthState,
-  signOut as logoutRuntimeUser,
-  pullCloudState as loadRuntimeWorkspaceFromCloud,
-  pushCloudState as syncRuntimeWorkspaceToCloud,
-};
