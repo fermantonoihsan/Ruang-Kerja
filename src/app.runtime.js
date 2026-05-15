@@ -154,7 +154,9 @@ function renderSidebar() {
 }
 
 function renderDashboard() {
-  const pages = filteredPages();
+  const pages = state.pages || [];
+  const visiblePages = filteredPages();
+
   const doing = pages.filter((page) => page.status === "doing");
   const review = pages.filter((page) => page.status === "review");
   const reminders = pages.filter((page) => page.reminderAt && !page.reminderDone);
@@ -166,52 +168,55 @@ function renderDashboard() {
   if ($("heroPageCount")) $("heroPageCount").textContent = pages.length;
   if ($("heroReminderCount")) $("heroReminderCount").textContent = reminders.length;
 
-$("dashboardRecentPages").innerHTML = pages.length
-  ? pages
-      .slice()
-      .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
-      .slice(0, 5)
-      .map(
-        (page) => `
-          <button class="dashboard-list-item" data-dashboard-page="${page.id}">
-            <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
-            <span>
-              <strong>${escapeHtml(page.title)}</strong>
-              <small>${escapeHtml(page.status || "ideas")}</small>
-            </span>
-          </button>
-        `,
-      )
-      .join("")
-  : `
-      <div class="empty-state">
-        <strong>Belum ada halaman.</strong>
-        <span>Buat halaman pertama untuk mulai menyusun workspace.</span>
-      </div>
-    `;
+  if ($("dashboardRecentPages")) {
+    $("dashboardRecentPages").innerHTML = visiblePages.length
+      ? visiblePages
+          .slice()
+          .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+          .slice(0, 5)
+          .map(
+            (page) => `
+              <button class="dashboard-list-item" data-dashboard-page="${page.id}">
+                <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
+                <span>
+                  <strong>${escapeHtml(page.title)}</strong>
+                  <small>${escapeHtml(page.status || "ideas")}</small>
+                </span>
+              </button>
+            `,
+          )
+          .join("")
+      : `
+          <div class="empty-state">
+            <strong>Belum ada halaman.</strong>
+            <span>Buat halaman pertama untuk mulai menyusun workspace.</span>
+          </div>
+        `;
+  }
 
- $("dashboardDuePages").innerHTML = reminders.length
-  ? reminders
-      .slice(0, 5)
-      .map(
-        (page) => `
-          <button class="dashboard-list-item" data-dashboard-page="${page.id}">
-            <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
-            <span>
-              <strong>${escapeHtml(page.title)}</strong>
-              <small>${new Date(page.reminderAt).toLocaleString("id-ID")}</small>
-            </span>
-          </button>
-        `,
-      )
-      .join("")
-  : `
-      <div class="empty-state">
-        <strong>Tidak ada reminder aktif.</strong>
-        <span>Tambahkan reminder dari halaman Notes.</span>
-      </div>
-    `;
-
+  if ($("dashboardDuePages")) {
+    $("dashboardDuePages").innerHTML = reminders.length
+      ? reminders
+          .slice(0, 5)
+          .map(
+            (page) => `
+              <button class="dashboard-list-item" data-dashboard-page="${page.id}">
+                <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
+                <span>
+                  <strong>${escapeHtml(page.title)}</strong>
+                  <small>${new Date(page.reminderAt).toLocaleString("id-ID")}</small>
+                </span>
+              </button>
+            `,
+          )
+          .join("")
+      : `
+          <div class="empty-state">
+            <strong>Tidak ada reminder aktif.</strong>
+            <span>Tambahkan reminder dari halaman Notes.</span>
+          </div>
+        `;
+  }
 }
 
 function renderEditor() {
@@ -382,9 +387,9 @@ function bindEvents() {
     renderAll();
   });
 
-  $("dashboardNewPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
-  $("newPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
-  $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+$("heroNewPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+$("newPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+$("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
 
   $("pageForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
