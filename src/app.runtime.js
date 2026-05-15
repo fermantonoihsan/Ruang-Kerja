@@ -163,6 +163,8 @@ function renderDashboard() {
   if ($("dashboardDoingPages")) $("dashboardDoingPages").textContent = doing.length;
   if ($("dashboardReviewPages")) $("dashboardReviewPages").textContent = review.length;
   if ($("dashboardReminderPages")) $("dashboardReminderPages").textContent = reminders.length;
+  if ($("heroPageCount")) $("heroPageCount").textContent = pages.length;
+  if ($("heroReminderCount")) $("heroReminderCount").textContent = reminders.length;
 
 $("dashboardRecentPages").innerHTML = pages.length
   ? pages

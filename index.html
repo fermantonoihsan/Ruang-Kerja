@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f7f8fa" />
     <title>Atlas Workspace</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
@@ -144,39 +145,40 @@
       <main class="workspace">
         <section class="workspace-view active" id="dashboardView" aria-label="Dashboard view">
   <div class="dashboard-hero">
- <div>
-    <span class="eyebrow">Personal Workspace OS</span>
-    <h1>Build your calm command center.</h1>
-    <p>
-      Plan your notes, tasks, reminders, and project flow in one focused workspace.
-    </p>
+    <div>
+      <span class="eyebrow">Personal Workspace OS</span>
+      <h1>Build your calm command center.</h1>
+      <p>
+        Plan your notes, tasks, reminders, and project flow in one focused workspace.
+      </p>
 
-    <div class="hero-actions">
-      <button class="button" id="newPageButton" type="button">
-        <img src="./assets/icons/plus.svg" class="button-icon" alt="" />
-        <span>New Page</span>
-      </button>
-     </div>
-
-  <aside class="hero-side-card">
-    <span class="chip">Workspace Status</span>
-    <strong>Local-first mode</strong>
-    <small>
-      Your workspace is saved locally. Cloud sync is prepared for the next phase.
-    </small>
-
-    <div class="hero-metrics">
-      <div>
-        <span>Pages</span>
-        <strong id="heroPageCount">1</strong>
-      </div>
-      <div>
-        <span>Reminders</span>
-        <strong id="heroReminderCount">0</strong>
+      <div class="hero-actions">
+        <button class="button" id="heroNewPageButton" type="button">
+          <img src="./assets/icons/plus.svg" class="button-icon" alt="" />
+          <span>New Page</span>
+        </button>
       </div>
     </div>
-  </aside>
-</section>
+
+    <aside class="hero-side-card">
+      <span class="chip">Workspace Status</span>
+      <strong>Local-first mode</strong>
+      <small>
+        Your workspace is saved locally. Cloud sync is prepared for the next phase.
+      </small>
+
+      <div class="hero-metrics">
+        <div>
+          <span>Pages</span>
+          <strong id="heroPageCount">1</strong>
+        </div>
+        <div>
+          <span>Reminders</span>
+          <strong id="heroReminderCount">0</strong>
+        </div>
+      </div>
+    </aside>
+  </div>
 
 
   <div class="dashboard-grid">
