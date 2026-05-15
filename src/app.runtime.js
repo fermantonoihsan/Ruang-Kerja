@@ -364,6 +364,22 @@ function bindEvents() {
     });
   });
 
+  document.addEventListener("click", (event) => {
+    const dashboardPageButton = event.target.closest("[data-dashboard-page]");
+
+    if (!dashboardPageButton) return;
+
+    const pageId = dashboardPageButton.dataset.dashboardPage;
+    const pageExists = state.pages.some((page) => page.id === pageId);
+
+    if (!pageExists) return;
+
+    state.selectedPageId = pageId;
+    saveState();
+    setView("notes");
+    renderAll();
+  });
+
   $("searchInput")?.addEventListener("input", (event) => {
     searchQuery = event.target.value.trim();
     renderAll();
