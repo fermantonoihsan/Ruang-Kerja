@@ -158,39 +158,51 @@ function renderDashboard() {
   if ($("dashboardReviewPages")) $("dashboardReviewPages").textContent = review.length;
   if ($("dashboardReminderPages")) $("dashboardReminderPages").textContent = reminders.length;
 
-  if ($("dashboardRecentPages")) {
-    $("dashboardRecentPages").innerHTML = pages
+$("dashboardRecentPages").innerHTML = pages.length
+  ? pages
       .slice()
       .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
       .slice(0, 5)
       .map(
         (page) => `
-          <button class="dashboard-item" data-dashboard-page="${page.id}">
-            <span>${escapeHtml(page.icon || "P")}</span>
-            <strong>${escapeHtml(page.title)}</strong>
-            <small>${escapeHtml(page.status)}</small>
+          <button class="dashboard-list-item" data-dashboard-page="${page.id}">
+            <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
+            <span>
+              <strong>${escapeHtml(page.title)}</strong>
+              <small>${escapeHtml(page.status || "ideas")}</small>
+            </span>
           </button>
         `,
       )
-      .join("");
-  }
+      .join("")
+  : `
+      <div class="empty-state">
+        <strong>Belum ada halaman.</strong>
+        <span>Buat halaman pertama untuk mulai menyusun workspace.</span>
+      </div>
+    `;
 
-  if ($("dashboardDuePages")) {
-    $("dashboardDuePages").innerHTML = reminders.length
-      ? reminders
-          .slice(0, 5)
-          .map(
-            (page) => `
-              <button class="dashboard-item" data-dashboard-page="${page.id}">
-                <span>${escapeHtml(page.icon || "P")}</span>
-                <strong>${escapeHtml(page.title)}</strong>
-                <small>${new Date(page.reminderAt).toLocaleString("id-ID")}</small>
-              </button>
-            `,
-          )
-          .join("")
-      : `<p class="empty-state">Tidak ada reminder aktif.</p>`;
-  }
+ $("dashboardDuePages").innerHTML = reminders.length
+  ? reminders
+      .slice(0, 5)
+      .map(
+        (page) => `
+          <button class="dashboard-list-item" data-dashboard-page="${page.id}">
+            <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
+            <span>
+              <strong>${escapeHtml(page.title)}</strong>
+              <small>${new Date(page.reminderAt).toLocaleString("id-ID")}</small>
+            </span>
+          </button>
+        `,
+      )
+      .join("")
+  : `
+      <div class="empty-state">
+        <strong>Tidak ada reminder aktif.</strong>
+        <span>Tambahkan reminder dari halaman Notes.</span>
+      </div>
+    `;
 
   document.querySelectorAll("[data-dashboard-page]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -294,9 +306,9 @@ function renderReminders() {
 
 function renderUser() {
   if ($("userName")) $("userName").textContent = "Guest";
-  if ($("userEmail")) $("userEmail").textContent = "Local workspace";
+  if ($("userEmail")) $("userEmail").textContent = "Offline-first workspace";
   if ($("userAvatar")) $("userAvatar").textContent = "G";
-  if ($("syncStatus")) $("syncStatus").textContent = "Local mode";
+  if ($("syncStatus")) $("syncStatus").textContent = "Local workspace";
 }
 
 function renderAll() {
