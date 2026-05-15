@@ -1,26 +1,65 @@
-import { getRuntimeState } from "../app.runtime.js";
-import { getTodayISO } from "../utils/helpers.js";
+import { loadFromStorage, saveToStorage, storageKeys } from "../services/storage.service.js";
+import { generateId, getTodayISO } from "../utils/helpers.js";
 
-let state = {};
+let state = null;
 const listeners = new Set();
 
+function createInitialState() {
+  const firstPage = {
+    id: generateId("page"),
+    title: "Welcome to Atlas Workspace",
+    icon: "A",
+    status: "doing",
+    tags: ["welcome", "workspace"],
+    markdown: "# Welcome to Atlas Workspace\n\nTulis catatan, susun task, dan kelola reminder dari satu tempat.",
+    reminderAt: "",
+    reminderDone: false,
+    createdAt: getTodayISO(),
+    updatedAt: getTodayISO(),
+  };
+
+  return {
+    workspaceName: "Personal OS",
+    selectedPageId: firstPage.id,
+    pages: [firstPage],
+    updatedAt: getTodayISO(),
+  };
+}
+
 export function initStore(initialState = null) {
-  state = initialState || getRuntimeState() || { updatedAt: getTodayISO(), pages: [] };
+  state =
+    initialState ||
+    loadFromStorage(storageKeys.workspace, null) ||
+    createInitialState();
+
   notify();
   return state;
 }
 
 export function getState() {
-  return getRuntimeState() || state;
+  if (!state) {
+    return initStore();
+  }
+
+  return state;
 }
 
-export function setState(nextState) {
+export function saveState() {
+  const currentState = getState();
+  currentState.updatedAt = getTodayISO();
+  saveToStorage(storageKeys.workspace, currentState);
+  notify();
+  return currentState;
+}
+
+export function setState(nextState = {}) {
   state = {
     ...getState(),
     ...nextState,
     updatedAt: getTodayISO(),
   };
 
+  saveToStorage(storageKeys.workspace, state);
   notify();
   return state;
 }
@@ -31,8 +70,18 @@ export function replaceState(nextState) {
     updatedAt: nextState?.updatedAt || getTodayISO(),
   };
 
+  saveToStorage(storageKeys.workspace, state);
   notify();
   return state;
+}
+
+export function selectedPage() {
+  const currentState = getState();
+  return (
+    currentState.pages.find((page) => page.id === currentState.selectedPageId) ||
+    currentState.pages[0] ||
+    null
+  );
 }
 
 export function subscribe(listener) {

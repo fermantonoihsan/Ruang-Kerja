@@ -1,4 +1,4 @@
-const DEFAULT_STORAGE_KEY = "atlas-workspace-state";
+const DEFAULT_STORAGE_KEY = "atlas_workspace_state_v2";
 
 export function loadFromStorage(storageKey = DEFAULT_STORAGE_KEY, fallbackValue = null) {
   try {

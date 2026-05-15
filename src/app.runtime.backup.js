@@ -13,15 +13,15 @@ let searchQuery = "";
 
 const $ = (id) => document.getElementById(id);
 
-function generateId(prefix = "id") {
+function uid(prefix = "id") {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
 }
 
-function getTodayISO() {
+function nowIso() {
   return new Date().toISOString();
 }
 
-function sanitizeText(value = "") {
+function escapeHtml(value = "") {
   return String(value)
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
@@ -38,7 +38,7 @@ function parseTags(value = "") {
 }
 
 function renderMarkdown(markdown = "") {
-  return sanitizeText(markdown)
+  return escapeHtml(markdown)
     .replace(/^### (.*$)/gim, "<h3>$1</h3>")
     .replace(/^## (.*$)/gim, "<h2>$1</h2>")
     .replace(/^# (.*$)/gim, "<h1>$1</h1>")
@@ -61,7 +61,7 @@ function loadState() {
   }
 
   const firstPage = {
-    id: generateId("page"),
+    id: uid("page"),
     title: "Welcome to Atlas Workspace",
     icon: "A",
     status: "doing",
@@ -69,20 +69,20 @@ function loadState() {
     markdown: "# Welcome to Atlas Workspace\n\nTulis catatan, susun task, dan kelola reminder dari satu tempat.",
     reminderAt: "",
     reminderDone: false,
-    createdAt: getTodayISO(),
-    updatedAt: getTodayISO(),
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
   };
 
   return {
     workspaceName: "Personal OS",
     selectedPageId: firstPage.id,
     pages: [firstPage],
-    updatedAt: getTodayISO(),
+    updatedAt: nowIso(),
   };
 }
 
 function saveState() {
-  state.updatedAt = getTodayISO();
+  state.updatedAt = nowIso();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
@@ -127,8 +127,8 @@ function renderSidebar() {
       .map(
         (page) => `
           <button class="page-item ${page.id === state.selectedPageId ? "active" : ""}" data-page-id="${page.id}">
-            <span>${sanitizeText(page.icon || "P")}</span>
-            <strong>${sanitizeText(page.title)}</strong>
+            <span>${escapeHtml(page.icon || "P")}</span>
+            <strong>${escapeHtml(page.title)}</strong>
           </button>
         `,
       )
@@ -148,7 +148,7 @@ function renderSidebar() {
     const tags = [...new Set(state.pages.flatMap((page) => page.tags || []))];
 
     $("tagCloud").innerHTML = tags.length
-      ? tags.map((tag) => `<span class="chip">#${sanitizeText(tag)}</span>`).join("")
+      ? tags.map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`).join("")
       : `<span class="muted">Belum ada tag</span>`;
   }
 }
@@ -170,15 +170,17 @@ function renderDashboard() {
 
   if ($("dashboardRecentPages")) {
     $("dashboardRecentPages").innerHTML = visiblePages.length
-      ? sortByUpdatedAt(visiblePages)
+      ? visiblePages
+          .slice()
+          .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
           .slice(0, 5)
           .map(
             (page) => `
               <button class="dashboard-list-item" data-dashboard-page="${page.id}">
-                <span class="page-dot">${sanitizeText(page.icon || "P")}</span>
+                <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
                 <span>
-                  <strong>${sanitizeText(page.title)}</strong>
-                  <small>${sanitizeText(page.status || "ideas")}</small>
+                  <strong>${escapeHtml(page.title)}</strong>
+                  <small>${escapeHtml(page.status || "ideas")}</small>
                 </span>
               </button>
             `,
@@ -199,10 +201,10 @@ function renderDashboard() {
           .map(
             (page) => `
               <button class="dashboard-list-item" data-dashboard-page="${page.id}">
-                <span class="page-dot">${sanitizeText(page.icon || "P")}</span>
+                <span class="page-dot">${escapeHtml(page.icon || "P")}</span>
                 <span>
-                  <strong>${sanitizeText(page.title)}</strong>
-                  <small>${formatDate(page.reminderAt)}</small>
+                  <strong>${escapeHtml(page.title)}</strong>
+                  <small>${new Date(page.reminderAt).toLocaleString("id-ID")}</small>
                 </span>
               </button>
             `,
@@ -223,13 +225,13 @@ function renderEditor() {
 
   if ($("titleInput")) $("titleInput").value = page.title || "";
   if ($("iconInput")) $("iconInput").value = page.icon || "";
-  if ($("tagsInput")) $("tagsInput").value = stringifyTags(page.tags || []);
+  if ($("tagsInput")) $("tagsInput").value = (page.tags || []).join(", ");
   if ($("statusSelect")) $("statusSelect").value = page.status || "ideas";
   if ($("markdownInput")) $("markdownInput").value = page.markdown || "";
   if ($("markdownPreview")) $("markdownPreview").innerHTML = renderMarkdown(page.markdown || "");
   if ($("previewTags")) {
     $("previewTags").innerHTML = (page.tags || [])
-      .map((tag) => `<span class="chip">#${sanitizeText(tag)}</span>`)
+      .map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`)
       .join("");
   }
 }
@@ -258,8 +260,8 @@ function renderKanban() {
                     .map(
                       (page) => `
                         <article class="kanban-card" data-open-page="${page.id}">
-                          <strong>${sanitizeText(page.icon || "P")} ${sanitizeText(page.title)}</strong>
-                          <p>${sanitizeText((page.markdown || "").replaceAll("#", "").slice(0, 90))}</p>
+                          <strong>${escapeHtml(page.icon || "P")} ${escapeHtml(page.title)}</strong>
+                          <p>${escapeHtml((page.markdown || "").replaceAll("#", "").slice(0, 90))}</p>
                         </article>
                       `,
                     )
@@ -298,8 +300,8 @@ function renderReminders() {
         .map(
           (page) => `
             <article class="reminder-item">
-              <strong>${sanitizeText(page.title)}</strong>
-              <span>${formatDate(page.reminderAt)}</span>
+              <strong>${escapeHtml(page.title)}</strong>
+              <span>${new Date(page.reminderAt).toLocaleString("id-ID")}</span>
             </article>
           `,
         )
@@ -329,7 +331,7 @@ function createPage() {
   const title = $("newPageTitle")?.value?.trim() || "Untitled";
 
   const page = {
-    id: generateId("page"),
+    id: uid("page"),
     title,
     icon: title.slice(0, 1).toUpperCase(),
     status: $("newPageStatus")?.value || "ideas",
@@ -337,8 +339,8 @@ function createPage() {
     markdown: `# ${title}\n\nMulai tulis catatan di sini.`,
     reminderAt: "",
     reminderDone: false,
-    createdAt: getTodayISO(),
-    updatedAt: getTodayISO(),
+    createdAt: nowIso(),
+    updatedAt: nowIso(),
   };
 
   state.pages.push(page);
@@ -398,7 +400,7 @@ $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal()
     const page = selectedPage();
     if (!page) return;
     page.title = event.target.value || "Untitled";
-    page.updatedAt = getTodayISO();
+    page.updatedAt = nowIso();
     saveState();
     renderSidebar();
     renderDashboard();
@@ -409,7 +411,7 @@ $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal()
     const page = selectedPage();
     if (!page) return;
     page.icon = event.target.value || "P";
-    page.updatedAt = getTodayISO();
+    page.updatedAt = nowIso();
     saveState();
     renderAll();
   });
@@ -418,7 +420,7 @@ $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal()
     const page = selectedPage();
     if (!page) return;
     page.tags = parseTags(event.target.value);
-    page.updatedAt = getTodayISO();
+    page.updatedAt = nowIso();
     saveState();
     renderAll();
   });
@@ -427,7 +429,7 @@ $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal()
     const page = selectedPage();
     if (!page) return;
     page.status = event.target.value;
-    page.updatedAt = getTodayISO();
+    page.updatedAt = nowIso();
     saveState();
     renderAll();
   });
@@ -436,7 +438,7 @@ $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal()
     const page = selectedPage();
     if (!page) return;
     page.markdown = event.target.value;
-    page.updatedAt = getTodayISO();
+    page.updatedAt = nowIso();
     saveState();
     renderEditor();
     renderDashboard();
@@ -479,13 +481,3 @@ export function initAtlasRuntime() {
     navigator.serviceWorker.register("service-worker.js").catch(() => {});
   }
 }
-
-import {
-  generateId,
-  getTodayISO,
-  sanitizeText,
-  parseTags,
-  stringifyTags,
-  sortByUpdatedAt,
-  formatDate,
-} from "./utils/helpers.js";
