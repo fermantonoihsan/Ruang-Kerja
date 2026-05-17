@@ -117,6 +117,11 @@
   <span>RFQ Tracker</span>
 </button>
 
+<button class="nav-item" data-view="se2026" data-bps-manager-only>
+  <i data-lucide="activity"></i>
+  <span>SE2026 Executive</span>
+</button>
+
 <button class="nav-item" data-view="reminders">
   <img src="./assets/icons/alarm-clock.svg" class="nav-icon" alt="" />
   <span>Reminders</span>
@@ -276,6 +281,187 @@
           </section>
         </section>
 
+        <section class="workspace-view" id="se2026View" aria-label="SE2026 executive dashboard">
+          <div class="executive-header">
+            <div>
+              <span class="eyebrow">SE2026 Executive Dashboard</span>
+              <h1>Ringkasan pimpinan Sensus Ekonomi 2026</h1>
+              <p id="seLastUpdated">Belum ada update internal</p>
+            </div>
+            <div class="region-badge">
+              <span>Wilayah</span>
+              <strong id="seRegionName">Kabupaten Mojokerto</strong>
+              <small id="seRegionCode">Kode wilayah 3516</small>
+            </div>
+            <button class="button button-light" type="button" id="focusInternalData">
+              <i data-lucide="database"></i>
+              <span>Update Data</span>
+            </button>
+          </div>
+
+          <div class="executive-grid">
+            <article class="executive-card executive-card-strong">
+              <span>Progres wilayah</span>
+              <strong id="seTerritoryProgress">0%</strong>
+            </article>
+            <article class="executive-card executive-card-strong">
+              <span>Progres petugas</span>
+              <strong id="seOfficerProgress">0%</strong>
+            </article>
+            <article class="executive-card executive-card-strong">
+              <span>Jumlah usaha terdata</span>
+              <strong id="seBusinessesRecorded">0</strong>
+            </article>
+            <article class="executive-card health-card">
+              <span>Wilayah merah / kuning / hijau</span>
+              <div class="health-counts">
+                <strong class="red" id="seRedAreas">0</strong>
+                <strong class="yellow" id="seYellowAreas">0</strong>
+                <strong class="green" id="seGreenAreas">0</strong>
+              </div>
+              <div class="area-health-bar" id="seAreaHealthBar"></div>
+            </article>
+          </div>
+
+          <div class="executive-grid executive-grid-alerts">
+            <article class="executive-card">
+              <span>Due soon</span>
+              <strong id="seDueSoon">0</strong>
+            </article>
+            <article class="executive-card">
+              <span>Dokumen menunggu review</span>
+              <strong id="seDocumentsReview">0</strong>
+            </article>
+            <article class="executive-card">
+              <span>Keputusan belum ditutup</span>
+              <strong id="seOpenDecisions">0</strong>
+            </article>
+            <article class="executive-card">
+              <span>Masalah lapangan kritis</span>
+              <strong id="seCriticalIssues">0</strong>
+            </article>
+          </div>
+
+          <div class="executive-panels">
+            <section class="executive-panel">
+              <div class="panel-header">
+                <h2>Due Soon</h2>
+                <span>Reminder tujuh hari ke depan</span>
+              </div>
+              <div class="executive-signal-list" id="seDueSoonList"></div>
+            </section>
+
+            <section class="executive-panel">
+              <div class="panel-header">
+                <h2>Review</h2>
+                <span>Dokumen dan validasi</span>
+              </div>
+              <div class="executive-signal-list" id="seReviewList"></div>
+            </section>
+
+            <section class="executive-panel">
+              <div class="panel-header">
+                <h2>Keputusan</h2>
+                <span>Rapat, approval, tindak lanjut</span>
+              </div>
+              <div class="executive-signal-list" id="seDecisionList"></div>
+            </section>
+
+            <section class="executive-panel">
+              <div class="panel-header">
+                <h2>Isu Kritis</h2>
+                <span>Urgent dan belum submitted</span>
+              </div>
+              <div class="executive-signal-list" id="seCriticalList"></div>
+            </section>
+          </div>
+
+          <div class="executive-source-layout">
+            <section class="executive-panel">
+              <div class="panel-header">
+                <h2>Update Terpublikasi</h2>
+                <span>Link publik SE2026</span>
+              </div>
+              <div class="source-pill-list" id="seDataSources"></div>
+              <form class="source-form" id="sePublicUpdateForm">
+                <input id="sePublicTitleInput" type="text" placeholder="Judul update" required />
+                <input id="sePublicUrlInput" type="url" placeholder="https://..." required />
+                <input id="sePublicSourceInput" type="text" placeholder="Sumber" />
+                <input id="sePublicDateInput" type="date" />
+                <textarea id="sePublicNoteInput" placeholder="Catatan singkat untuk pimpinan"></textarea>
+                <button class="button button-light" type="submit">
+                  <i data-lucide="link"></i>
+                  <span>Tambah Link</span>
+                </button>
+              </form>
+              <div class="public-update-list" id="sePublicUpdates"></div>
+            </section>
+
+            <section class="executive-panel" id="seInternalDataPanel">
+              <div class="panel-header">
+                <h2>Data Internal BPS</h2>
+                <span>Input manual pimpinan/tim</span>
+              </div>
+              <form class="internal-form" id="seInternalDataForm">
+                <label>
+                  <span>Wilayah sensus</span>
+                  <select id="seRegionSelect">
+                    <option value="3516">Kabupaten Mojokerto</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Progres wilayah (%)</span>
+                  <input id="seTerritoryInput" type="number" min="0" max="100" step="1" />
+                </label>
+                <label>
+                  <span>Progres petugas (%)</span>
+                  <input id="seOfficerInput" type="number" min="0" max="100" step="1" />
+                </label>
+                <label>
+                  <span>Jumlah usaha terdata</span>
+                  <input id="seBusinessesInput" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  <span>Wilayah hijau</span>
+                  <input id="seGreenInput" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  <span>Wilayah kuning</span>
+                  <input id="seYellowInput" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  <span>Wilayah merah</span>
+                  <input id="seRedInput" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  <span>Dokumen review tambahan</span>
+                  <input id="seDocumentsInput" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  <span>Keputusan terbuka tambahan</span>
+                  <input id="seDecisionsInput" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  <span>Isu kritis tambahan</span>
+                  <input id="seCriticalInput" type="number" min="0" step="1" />
+                </label>
+                <label class="internal-note-field">
+                  <span>Catatan internal</span>
+                  <textarea id="seInternalNoteInput" placeholder="Ringkasan kondisi terbaru, risiko, atau arahan pimpinan"></textarea>
+                </label>
+                <button class="button" type="submit">
+                  <i data-lucide="save"></i>
+                  <span>Simpan Data Internal</span>
+                </button>
+              </form>
+              <div class="internal-note">
+                <strong>Catatan terakhir</strong>
+                <p id="seInternalNote">Belum ada catatan internal.</p>
+              </div>
+            </section>
+          </div>
+        </section>
+
         <section class="workspace-view" id="kanbanView" aria-label="Kanban view">
           <div class="kanban-header">
             <div>
@@ -429,6 +615,12 @@
             <span class="template-mark">M</span>
             <strong>Manager</strong>
             <small>Program monitoring, leadership notes, report review, and strategic issues.</small>
+          </button>
+
+          <button class="template-option" type="button" data-template-choice="bps-manager">
+            <span class="template-mark">B</span>
+            <strong>Kepala Kantor BPS</strong>
+            <small>Monitoring program statistik, agenda rapat, deadline laporan, review, dan approval pimpinan.</small>
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { columns } from "../config/constants.js";
+import { getWorkspaceColumns } from "../config/constants.js";
 import { renderDashboard as renderDashboardView } from "../features/dashboard/dashboard.render.js";
 import { renderKanban as renderKanbanView } from "../features/kanban/kanban.render.js";
 import { renderEditor } from "../features/notes/notes.render.js";
@@ -35,7 +35,8 @@ export function renderDashboard() {
 }
 
 export function renderKanban() {
-  renderKanbanView({ pages: getState().pages || [], columns });
+  const state = getState();
+  renderKanbanView({ pages: state.pages || [], columns: getWorkspaceColumns(state.templateId) });
 }
 
 export function renderReminders() {

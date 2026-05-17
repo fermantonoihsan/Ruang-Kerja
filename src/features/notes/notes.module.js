@@ -1,3 +1,4 @@
+import { getWorkspaceColumns } from "../../config/constants.js";
 import { getState, saveState, selectedPage } from "../../state/store.js";
 import { generateId, getTodayISO, parseTags } from "../../utils/helpers.js";
 import { renderEditor } from "./notes.render.js";
@@ -9,11 +10,12 @@ export function renderNotes() {
 export function createPage(pageInput = {}) {
   const state = getState();
   const title = pageInput.title?.trim?.() || "Untitled";
+  const workspaceColumns = getWorkspaceColumns(state.templateId);
   const page = {
     id: generateId("page"),
     title,
     icon: pageInput.icon || title.slice(0, 1).toUpperCase(),
-    status: pageInput.status || "ideas",
+    status: pageInput.status || workspaceColumns[0]?.id || "ideas",
     tags: parseTags(pageInput.tags || ""),
     markdown: pageInput.markdown || `# ${title}\n\nStart writing your notes here.`,
     reminderAt: pageInput.reminderAt || "",

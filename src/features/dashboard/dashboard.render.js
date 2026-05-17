@@ -111,6 +111,18 @@ function getMetricValue(metricValue, pages, reminders) {
     return pages.filter((page) => (page.tags || []).includes(tag)).length;
   }
 
+  if (metricValue.startsWith("completedThisWeek:")) {
+    const status = metricValue.replace("completedThisWeek:", "");
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    return pages.filter((page) => {
+      if (page.status !== status) return false;
+      const updatedAt = page.updatedAt ? new Date(page.updatedAt) : null;
+      return updatedAt && !Number.isNaN(updatedAt.getTime()) && updatedAt >= weekAgo;
+    }).length;
+  }
+
   if (metricValue.startsWith("rfq:")) {
     const rfqStatus = metricValue.replace("rfq:", "");
     if (rfqStatus === "any") return pages.filter((page) => page.rfqStatus).length;

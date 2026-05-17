@@ -128,6 +128,117 @@ const templateDefinitions = {
       },
     ],
   },
+  "bps-manager": {
+    id: "bps-manager",
+    label: "Kepala Kantor BPS",
+    workspaceName: "Dashboard Kepala Kantor BPS",
+    displayName: "Kepala Kantor BPS",
+    description:
+      "Koordinasi program statistik, agenda rapat, deadline laporan, review dokumen, dan monitoring kegiatan BPS.",
+    se2026Executive: {
+      regionName: "Kabupaten Mojokerto",
+      regionCode: "3516",
+      territoryProgress: 18,
+      officerProgress: 72,
+      businessesRecorded: 1240,
+      greenAreas: 8,
+      yellowAreas: 5,
+      redAreas: 2,
+      documentsReview: 3,
+      openDecisions: 2,
+      criticalIssues: 1,
+      internalNote:
+        "Pantau wilayah merah setiap pagi, prioritaskan dukungan petugas untuk area dengan progres input rendah.",
+      publicUpdates: [
+        {
+          title: "BPS Kabupaten Mojokerto",
+          url: "https://mojokertokab.bps.go.id",
+          source: "BPS",
+          publishedAt: "2026-05-18",
+          note: "Portal resmi BPS Kabupaten Mojokerto untuk rilis, publikasi, dan berita statistik daerah.",
+        },
+        {
+          title: "Lapangan Usaha Cakupan SE2026 - Kategori G",
+          url: "https://mojokertokab.bps.go.id/id/news/2025/05/27/123/lapangan-usaha-cakupan-se2026--kategori-g-.html",
+          source: "BPS Kabupaten Mojokerto",
+          publishedAt: "2025-05-27",
+          note: "Rujukan cakupan usaha perdagangan besar dan eceran dalam SE2026.",
+        },
+        {
+          title: "Kabupaten Mojokerto Dalam Angka 2026",
+          url: "https://mojokertokab.bps.go.id/id/publication/2026/02/27/12624a2f5e14395138d81ecc/kabupaten-mojokerto-dalam-angka-2026.html",
+          source: "BPS Kabupaten Mojokerto",
+          publishedAt: "2026-02-27",
+          note: "Basis konteks wilayah dan indikator ekonomi-sosial Kabupaten Mojokerto.",
+        },
+        {
+          title: "PDRB Kabupaten Mojokerto Menurut Lapangan Usaha 2021-2025",
+          url: "https://mojokertokab.bps.go.id/id/publication/2026/04/06/24e35feb8f8fec92a2d532ca/produk-domestik-regional-bruto-kabupaten-mojokerto-menurut-lapangan-usaha-2021-2025.html",
+          source: "BPS Kabupaten Mojokerto",
+          publishedAt: "2026-04-06",
+          note: "Konteks struktur ekonomi daerah untuk membaca hasil dan risiko pendataan SE2026.",
+        },
+      ],
+      dataSources: [
+        {
+          label: "Data BPS Kabupaten Mojokerto",
+          type: "bps",
+          description: "Rilis, publikasi, dan berita resmi dari mojokertokab.bps.go.id.",
+        },
+        {
+          label: "Update Internal BPS",
+          type: "internal",
+          description: "Angka progres, status wilayah, isu kritis, dan catatan pimpinan yang diinput tim.",
+        },
+      ],
+    },
+    pages: [
+      {
+        title: "Program Monitoring Board",
+        icon: "P",
+        status: "fieldwork",
+        tags: ["survei", "monitoring", "urgent", "kabupaten"],
+        markdown:
+          "# Program Monitoring Board\n\n## Kegiatan Sedang Berjalan\n- Program: Survei Sosial Ekonomi Nasional\n- PIC: Koordinator Fungsi Statistik Sosial\n- Tahap: Fieldwork\n- Risiko: Keterlambatan input dari beberapa kecamatan\n- Keputusan yang dibutuhkan: Penyesuaian jadwal supervisi lapangan\n\n## Checklist Minggu Ini\n- [ ] Konfirmasi progres lapangan harian\n- [ ] Cek kelengkapan dokumen pencacahan\n- [ ] Tindak lanjuti wilayah dengan progres rendah\n- [ ] Siapkan bahan validasi awal",
+        reminderAt: "2026-05-20T09:00",
+      },
+      {
+        title: "Rapat Koordinasi Statistik Daerah",
+        icon: "R",
+        status: "planned",
+        tags: ["koordinasi daerah", "rapat", "provinsi", "urgent"],
+        markdown:
+          "# Rapat Koordinasi Statistik Daerah\n\n## Agenda\n- Evaluasi progres survei dan sensus berjalan\n- Sinkronisasi publikasi kabupaten/kota\n- Kesiapan validasi data sektoral\n\n## Keputusan\n-\n\n## PIC\n- Pimpinan rapat:\n- Notulis:\n- PIC tindak lanjut:\n\n## Deadline\n- Bahan rapat: 2026-05-21\n- Tindak lanjut awal: 2026-05-24\n\n## Follow-up\n- [ ] Kirim undangan dan agenda\n- [ ] Kumpulkan bahan dari setiap fungsi\n- [ ] Susun daftar keputusan",
+        reminderAt: "2026-05-21T08:30",
+      },
+      {
+        title: "Tracking Kegiatan Statistik",
+        icon: "T",
+        status: "validation",
+        tags: ["survei", "sensus", "publikasi", "validasi data"],
+        markdown:
+          "# Tracking Kegiatan Statistik\n\n| Kegiatan | Jenis | PIC | Tahap | Deadline | Catatan |\n| --- | --- | --- | --- | --- | --- |\n| Survei Sosial Ekonomi | survei | Fungsi Sosial | Validation | 2026-05-24 | Cek anomali rumah tangga |\n| Sensus Pertanian Lanjutan | sensus | Fungsi Produksi | Fieldwork | 2026-05-28 | Supervisi wilayah prioritas |\n| Publikasi Daerah Dalam Angka | publikasi | IPDS | Reporting | 2026-06-03 | Review narasi dan tabel |\n| Koordinasi Data Sektoral | koordinasi daerah | Neraca | Planned | 2026-05-30 | Tunggu konfirmasi OPD |\n\n## Perlu Perhatian\n- [ ] Wilayah dengan progres rendah\n- [ ] Validasi data outlier\n- [ ] Draft publikasi yang menunggu review",
+        reminderAt: "2026-05-24T10:00",
+      },
+      {
+        title: "Reminder Laporan dan Approval",
+        icon: "L",
+        status: "reporting",
+        tags: ["laporan", "publikasi", "approval pimpinan", "urgent"],
+        markdown:
+          "# Reminder Laporan dan Approval\n\n## Deadline Publikasi\n- Publikasi statistik bulanan:\n- Batas finalisasi tabel:\n- Review narasi:\n\n## Batas Input Data\n- Sistem internal:\n- Wilayah belum lengkap:\n- PIC follow-up:\n\n## Review Dokumen\n- [ ] Konsistensi angka antar tabel\n- [ ] Catatan metodologi\n- [ ] Ringkasan eksekutif\n- [ ] Persetujuan pimpinan\n\n## Approval Pimpinan\n- Dokumen:\n- Keputusan:\n- Deadline:",
+        reminderAt: "2026-05-25T14:00",
+      },
+      {
+        title: "Pekerjaan Selesai Minggu Ini",
+        icon: "S",
+        status: "submitted",
+        tags: ["laporan bulanan", "publikasi", "sdm"],
+        markdown:
+          "# Pekerjaan Selesai Minggu Ini\n\n## Submitted\n- Laporan realisasi kegiatan mingguan\n- Draft briefing pimpinan\n- Rekap absensi kegiatan lapangan\n\n## Catatan Evaluasi\n- Yang berjalan baik:\n- Hambatan utama:\n- Perlu keputusan lanjutan:\n\n## Arsip\n- Link dokumen:\n- Tanggal submit:\n- Penerima:",
+      },
+    ],
+  },
 };
 
 export const workspaceTemplates = Object.values(templateDefinitions);
@@ -193,6 +304,27 @@ export const dashboardProfiles = {
     dueTitle: "Decision Deadlines",
     dueSubtitle: "Items needing attention",
   },
+  "bps-manager": {
+    eyebrow: "Dashboard Kepala Kantor BPS",
+    title: "Pantau kegiatan statistik, agenda rapat, review, dan deadline laporan.",
+    description:
+      "Ruang kerja pimpinan untuk koordinasi survei, sensus, publikasi, validasi data, laporan bulanan, dan approval lintas fungsi.",
+    capabilities: ["Program", "Agenda", "Review", "Deadline"],
+    statusLabel: "Monitoring Pimpinan",
+    statusTitle: "Fokus pada kegiatan yang perlu keputusan.",
+    statusDescription:
+      "Gunakan board untuk melihat pergerakan kegiatan dari rencana, lapangan, validasi, pelaporan, sampai submitted.",
+    metrics: [
+      { label: "Berjalan", value: "status:fieldwork" },
+      { label: "Due Soon", value: "reminders" },
+      { label: "Item Review", value: "status:validation" },
+      { label: "Selesai Minggu Ini", value: "completedThisWeek:submitted" },
+    ],
+    recentTitle: "Kegiatan Sedang Berjalan",
+    recentSubtitle: "Program, rapat, laporan, dan review terbaru",
+    dueTitle: "Reminder Laporan",
+    dueSubtitle: "Publikasi, input data, rapat, review, approval",
+  },
   default: {
     eyebrow: "Atlas Workspace",
     title: "Organize work, ideas, and execution in one calm system.",
@@ -226,13 +358,13 @@ export function createWorkspaceFromTemplate(templateId) {
     rfqStatus: page.rfqStatus || "",
     tags: page.tags,
     markdown: page.markdown,
-    reminderAt: "",
+    reminderAt: page.reminderAt || "",
     reminderDone: false,
     createdAt: now,
     updatedAt: now,
   }));
 
-  return {
+  const workspace = {
     templateId: template.id,
     workspaceName: template.workspaceName,
     displayName: template.displayName,
@@ -245,4 +377,17 @@ export function createWorkspaceFromTemplate(templateId) {
     pages,
     updatedAt: now,
   };
+
+  if (template.se2026Executive) {
+    workspace.se2026Executive = {
+      ...template.se2026Executive,
+      publicUpdates: (template.se2026Executive.publicUpdates || []).map((item) => ({
+        id: generateId("se_public"),
+        ...item,
+      })),
+      lastUpdated: now,
+    };
+  }
+
+  return workspace;
 }

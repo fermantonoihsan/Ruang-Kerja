@@ -1,4 +1,4 @@
-import { columns, rfqColumns } from "./config/constants.js";
+import { getWorkspaceColumns, rfqColumns } from "./config/constants.js";
 import {
   clearFirebaseConfig,
   getFirebaseConfig,
@@ -10,6 +10,10 @@ import { renderKanban } from "./features/kanban/kanban.render.js";
 import { renderEditor } from "./features/notes/notes.render.js";
 import { renderReminders } from "./features/reminders/reminders.render.js";
 import { renderRfqTracker } from "./features/rfq/rfq.render.js";
+import {
+  getExecutiveState,
+  renderSe2026ExecutiveDashboard,
+} from "./features/se2026/se2026.render.js";
 import {
   getCurrentUser,
   onAuthStateChanged,
@@ -92,7 +96,9 @@ function filteredPages() {
 }
 
 function setView(view) {
-  const nextView = view === "rfq" && state?.templateId !== "procurement" ? "dashboard" : view;
+  let nextView = view;
+  if (view === "rfq" && state?.templateId !== "procurement") nextView = "dashboard";
+  if (view === "se2026" && state?.templateId !== "bps-manager") nextView = "dashboard";
   activeView = nextView;
 
   document.querySelectorAll("[data-view]").forEach((button) => {
@@ -102,6 +108,7 @@ function setView(view) {
   [
     ["dashboard", $("dashboardView")],
     ["notes", $("notesView")],
+    ["se2026", $("se2026View")],
     ["kanban", $("kanbanView")],
     ["rfq", $("rfqView")],
     ["reminders", $("remindersView")],
@@ -122,7 +129,8 @@ function selectPage(pageId) {
 
 function movePageToStatus(pageId, status) {
   const page = state.pages.find((item) => item.id === pageId);
-  if (!page || !columns.some((column) => column.id === status)) return;
+  const workspaceColumns = getWorkspaceColumns(state.templateId);
+  if (!page || !workspaceColumns.some((column) => column.id === status)) return;
 
   page.status = status;
   page.updatedAt = getTodayISO();
@@ -142,12 +150,13 @@ function moveRfqToStatus(pageId, rfqStatus) {
 
 function createPage() {
   const title = $("newPageTitle")?.value?.trim() || "Untitled";
+  const workspaceColumns = getWorkspaceColumns(state.templateId);
 
   const page = {
     id: generateId("page"),
     title,
     icon: title.slice(0, 1).toUpperCase(),
-    status: $("newPageStatus")?.value || "ideas",
+    status: $("newPageStatus")?.value || workspaceColumns[0]?.id || "ideas",
     rfqStatus: state.templateId === "procurement" ? "request" : "",
     tags: parseTags($("newPageTags")?.value || ""),
     markdown: `# ${title}\n\nStart writing your notes here.`,
@@ -351,16 +360,24 @@ function applyTemplate(templateId) {
 
 function renderAll() {
   state = getState();
+  ensureSe2026ExecutiveState();
   ensureProcurementRfqStatuses();
+  ensurePageStatuses();
   const pages = filteredPages();
+  const workspaceColumns = getWorkspaceColumns(state.templateId);
 
   applyWorkspacePreferences(state.preferences);
   renderTemplateVisibility();
+  populateStatusOptions(workspaceColumns);
   setView(activeView);
   renderSidebar({ state, pages, onSelectPage: selectPage });
   renderDashboard({ state, filteredPages: pages, setView, renderAll });
+  renderSe2026ExecutiveDashboard({
+    state,
+    onRemovePublicUpdate: removeSe2026PublicUpdate,
+  });
   renderEditor({ page: selectedPage() });
-  renderKanban({ pages, columns, onOpenPage: selectPage, onMovePage: movePageToStatus });
+  renderKanban({ pages, columns: workspaceColumns, onOpenPage: selectPage, onMovePage: movePageToStatus });
   renderRfqTracker({ pages, columns: rfqColumns, onOpenPage: selectPage, onMoveRfq: moveRfqToStatus });
   renderReminders({ pages });
   renderUser({ user: currentUser, syncStatus, guestName: state.displayName });
@@ -369,15 +386,193 @@ function renderAll() {
 
 function renderTemplateVisibility() {
   const isProcurement = state.templateId === "procurement";
+  const isBpsManager = state.templateId === "bps-manager";
 
   document.querySelectorAll("[data-procurement-only]").forEach((node) => {
     node.hidden = !isProcurement;
     node.style.display = isProcurement ? "" : "none";
   });
 
+  document.querySelectorAll("[data-bps-manager-only]").forEach((node) => {
+    node.hidden = !isBpsManager;
+    node.style.display = isBpsManager ? "" : "none";
+  });
+
   if (!isProcurement && activeView === "rfq") {
     activeView = "dashboard";
   }
+
+  if (!isBpsManager && activeView === "se2026") {
+    activeView = "dashboard";
+  }
+}
+
+function ensureSe2026ExecutiveState() {
+  if (state.templateId !== "bps-manager") return;
+
+  const executive = getExecutiveState(state);
+  const hasPublicUpdates = Array.isArray(executive.publicUpdates) && executive.publicUpdates.length;
+  const missingMojokertoSources = defaultMojokertoPublicUpdates().some(
+    (source) => !(executive.publicUpdates || []).some((item) => item.url === source.url),
+  );
+  const needsPatch =
+    !state.se2026Executive ||
+    !hasPublicUpdates ||
+    missingMojokertoSources ||
+    !executive.regionName ||
+    !executive.dataSources?.length;
+
+  if (!needsPatch) return;
+
+  state.se2026Executive = {
+    ...executive,
+    regionName: executive.regionName || "Kabupaten Mojokerto",
+    regionCode: executive.regionCode || "3516",
+    publicUpdates: mergePublicUpdates(executive.publicUpdates || [], defaultMojokertoPublicUpdates()),
+    dataSources: executive.dataSources?.length ? executive.dataSources : defaultSe2026DataSources(),
+  };
+  saveState();
+  state = getState();
+}
+
+function updateSe2026InternalData() {
+  const executive = getExecutiveState(state);
+
+  state.se2026Executive = {
+    ...executive,
+    regionName: getSe2026RegionName($("seRegionSelect")?.value),
+    regionCode: $("seRegionSelect")?.value || "3516",
+    territoryProgress: clampPercent($("seTerritoryInput")?.value),
+    officerProgress: clampPercent($("seOfficerInput")?.value),
+    businessesRecorded: readPositiveNumber("seBusinessesInput"),
+    greenAreas: readPositiveNumber("seGreenInput"),
+    yellowAreas: readPositiveNumber("seYellowInput"),
+    redAreas: readPositiveNumber("seRedInput"),
+    documentsReview: readPositiveNumber("seDocumentsInput"),
+    openDecisions: readPositiveNumber("seDecisionsInput"),
+    criticalIssues: readPositiveNumber("seCriticalInput"),
+    internalNote: $("seInternalNoteInput")?.value?.trim() || "",
+    lastUpdated: getTodayISO(),
+  };
+
+  saveState();
+  renderAll();
+}
+
+function getSe2026RegionName(regionCode) {
+  if (regionCode === "3516") return "Kabupaten Mojokerto";
+  return "Kabupaten Mojokerto";
+}
+
+function defaultMojokertoPublicUpdates() {
+  return [
+    {
+      id: generateId("se_public"),
+      title: "BPS Kabupaten Mojokerto",
+      url: "https://mojokertokab.bps.go.id",
+      source: "BPS",
+      publishedAt: "2026-05-18",
+      note: "Portal resmi BPS Kabupaten Mojokerto untuk rilis, publikasi, dan berita statistik daerah.",
+    },
+    {
+      id: generateId("se_public"),
+      title: "Lapangan Usaha Cakupan SE2026 - Kategori G",
+      url: "https://mojokertokab.bps.go.id/id/news/2025/05/27/123/lapangan-usaha-cakupan-se2026--kategori-g-.html",
+      source: "BPS Kabupaten Mojokerto",
+      publishedAt: "2025-05-27",
+      note: "Rujukan cakupan usaha perdagangan besar dan eceran dalam SE2026.",
+    },
+    {
+      id: generateId("se_public"),
+      title: "Kabupaten Mojokerto Dalam Angka 2026",
+      url: "https://mojokertokab.bps.go.id/id/publication/2026/02/27/12624a2f5e14395138d81ecc/kabupaten-mojokerto-dalam-angka-2026.html",
+      source: "BPS Kabupaten Mojokerto",
+      publishedAt: "2026-02-27",
+      note: "Basis konteks wilayah dan indikator ekonomi-sosial Kabupaten Mojokerto.",
+    },
+    {
+      id: generateId("se_public"),
+      title: "PDRB Kabupaten Mojokerto Menurut Lapangan Usaha 2021-2025",
+      url: "https://mojokertokab.bps.go.id/id/publication/2026/04/06/24e35feb8f8fec92a2d532ca/produk-domestik-regional-bruto-kabupaten-mojokerto-menurut-lapangan-usaha-2021-2025.html",
+      source: "BPS Kabupaten Mojokerto",
+      publishedAt: "2026-04-06",
+      note: "Konteks struktur ekonomi daerah untuk membaca hasil dan risiko pendataan SE2026.",
+    },
+  ];
+}
+
+function defaultSe2026DataSources() {
+  return [
+    {
+      label: "Data BPS Kabupaten Mojokerto",
+      type: "bps",
+      description: "Rilis, publikasi, dan berita resmi dari mojokertokab.bps.go.id.",
+    },
+    {
+      label: "Update Internal BPS",
+      type: "internal",
+      description: "Angka progres, status wilayah, isu kritis, dan catatan pimpinan yang diinput tim.",
+    },
+  ];
+}
+
+function mergePublicUpdates(existingUpdates, defaultUpdates) {
+  const existingUrls = new Set(existingUpdates.map((item) => item.url));
+  const missingDefaults = defaultUpdates.filter((item) => !existingUrls.has(item.url));
+  return [...existingUpdates, ...missingDefaults];
+}
+
+function addSe2026PublicUpdate() {
+  const executive = getExecutiveState(state);
+  const url = normalizePublicUrl($("sePublicUrlInput")?.value || "");
+
+  if (!url) {
+    window.alert("Gunakan link publik dengan awalan http:// atau https://.");
+    return;
+  }
+
+  const update = {
+    id: generateId("se_public"),
+    title: $("sePublicTitleInput")?.value?.trim() || url,
+    url,
+    source: $("sePublicSourceInput")?.value?.trim() || "Sumber publik",
+    publishedAt: $("sePublicDateInput")?.value || "",
+    note: $("sePublicNoteInput")?.value?.trim() || "",
+  };
+
+  state.se2026Executive = {
+    ...executive,
+    publicUpdates: [update, ...(executive.publicUpdates || [])],
+  };
+
+  saveState();
+  $("sePublicUpdateForm")?.reset();
+  renderAll();
+}
+
+function removeSe2026PublicUpdate(updateId) {
+  const executive = getExecutiveState(state);
+  state.se2026Executive = {
+    ...executive,
+    publicUpdates: (executive.publicUpdates || []).filter((item) => item.id !== updateId),
+  };
+
+  saveState();
+  renderAll();
+}
+
+function readPositiveNumber(inputId) {
+  return Math.max(0, Math.round(Number($(inputId)?.value) || 0));
+}
+
+function clampPercent(value) {
+  return Math.min(100, Math.max(0, Math.round(Number(value) || 0)));
+}
+
+function normalizePublicUrl(value) {
+  const url = String(value || "").trim();
+  if (!/^https?:\/\//i.test(url)) return "";
+  return url;
 }
 
 function ensureProcurementRfqStatuses() {
@@ -404,6 +599,26 @@ function ensureProcurementRfqStatuses() {
     if (page.rfqStatus) {
       didPatch = true;
     }
+  });
+
+  if (didPatch) {
+    saveState();
+    state = getState();
+  }
+}
+
+function ensurePageStatuses() {
+  const workspaceColumns = getWorkspaceColumns(state.templateId);
+  const allowedStatuses = new Set(workspaceColumns.map((column) => column.id));
+  const fallbackStatus = workspaceColumns[0]?.id || "ideas";
+  let didPatch = false;
+
+  (state.pages || []).forEach((page) => {
+    if (allowedStatuses.has(page.status)) return;
+
+    page.status = fallbackStatus;
+    page.updatedAt = getTodayISO();
+    didPatch = true;
   });
 
   if (didPatch) {
@@ -489,8 +704,8 @@ function startReminderScheduler() {
   });
 }
 
-function populateStatusOptions() {
-  const options = columns.map((column) => `<option value="${column.id}">${column.title}</option>`).join("");
+function populateStatusOptions(workspaceColumns = getWorkspaceColumns(state?.templateId)) {
+  const options = workspaceColumns.map((column) => `<option value="${column.id}">${column.title}</option>`).join("");
 
   if ($("statusSelect")) $("statusSelect").innerHTML = options;
   if ($("newPageStatus")) $("newPageStatus").innerHTML = options;
@@ -605,6 +820,20 @@ export function initAtlasRuntime() {
 
   $("downloadRfqTemplate")?.addEventListener("click", () => {
     downloadRfqTemplate();
+  });
+
+  $("seInternalDataForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    updateSe2026InternalData();
+  });
+
+  $("sePublicUpdateForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addSe2026PublicUpdate();
+  });
+
+  $("focusInternalData")?.addEventListener("click", () => {
+    $("seInternalDataPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
   renderAll();
