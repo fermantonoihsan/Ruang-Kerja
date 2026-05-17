@@ -7,8 +7,8 @@ export function renderReminders({ pages }) {
 
   if ($("reminderMeta")) {
     $("reminderMeta").textContent = reminders.length
-      ? `${reminders.length} reminder`
-      : "Tidak ada reminder";
+      ? `${reminders.length} ${reminders.length === 1 ? "reminder" : "reminders"}`
+      : "No reminders";
   }
 
   if (!$("reminderList")) return;
@@ -24,5 +24,5 @@ export function renderReminders({ pages }) {
           `,
         )
         .join("")
-    : `<p class="empty-state">Belum ada reminder.</p>`;
+    : `<p class="empty-state">No reminders yet.</p>`;
 }

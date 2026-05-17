@@ -1,10 +1,17 @@
 {
   "name": "Atlas Workspace",
   "short_name": "Atlas",
-  "description": "Local-first workspace with Firebase Auth and Firestore sync.",
+  "description": "A calm, local-first productivity workspace for notes, Kanban planning, reminders, and structured thinking.",
   "start_url": ".",
   "display": "standalone",
   "background_color": "#f7f8fa",
   "theme_color": "#f7f8fa",
-  "icons": []
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
 }

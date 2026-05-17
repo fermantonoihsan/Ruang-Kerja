@@ -1,9 +1,13 @@
 <!doctype html>
-<html lang="id" data-theme="light"> 
+<html lang="en" data-theme="light"> 
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#f7f8fa" />
+    <meta
+      name="description"
+      content="Atlas Workspace is a calm, local-first productivity workspace for notes, Kanban planning, reminders, and structured thinking."
+    />
     <title>Atlas Workspace</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="manifest" href="manifest.webmanifest" />
@@ -25,7 +29,7 @@
           <span class="brand-mark">A</span>
           <div>
             <strong>Atlas Workspace</strong>
-            <span>Personal OS</span>
+            <span>Calm Productivity Workspace</span>
           </div>
         </div>
 
@@ -80,10 +84,10 @@
           <div class="sidebar-label">Workspace</div>
           <div class="workspace-switcher">
           <div>
-            <span>Workspace</span>
-            <strong id="workspaceName">Personal OS</strong>
+            <span>Current Space</span>
+            <strong id="workspaceName">My Workspace</strong>
           </div>
-          <button class="icon-button" id="newPageButton" title="Halaman baru" aria-label="Halaman baru">
+          <button class="icon-button" id="newPageButton" title="New page" aria-label="New page">
             <i data-lucide="plus"></i>
           </button>
           </div>
@@ -146,10 +150,10 @@
         <section class="workspace-view active" id="dashboardView" aria-label="Dashboard view">
   <div class="dashboard-hero">
     <div>
-      <span class="eyebrow">Personal Workspace OS</span>
-      <h1>Build your calm command center.</h1>
+      <span class="eyebrow">Atlas Workspace</span>
+      <h1>Your focused workspace for notes, tasks, and reminders.</h1>
       <p>
-        Plan your notes, tasks, reminders, and project flow in one focused workspace.
+        Capture ideas, organize project flow, and stay on top of daily work in a fast local-first workspace.
       </p>
 
       <div class="hero-actions">
@@ -204,7 +208,7 @@
     <section class="dashboard-panel">
       <div class="panel-header">
         <h2>Recent Pages</h2>
-        <span>Terakhir diubah</span>
+        <span>Last updated</span>
       </div>
       <div id="dashboardRecentPages" class="dashboard-list"></div>
     </section>
@@ -212,7 +216,7 @@
     <section class="dashboard-panel">
       <div class="panel-header">
         <h2>Due Soon</h2>
-        <span>Reminder aktif</span>
+        <span>Active reminders</span>
       </div>
       <div id="dashboardDuePages" class="dashboard-list"></div>
     </section>
@@ -221,13 +225,13 @@
         <section class="workspace-view" id="notesView" aria-label="Pages view">
           <section class="editor-panel">
             <div class="page-toolbar">
-              <button class="icon-button" id="deletePageButton" title="Hapus halaman" aria-label="Hapus halaman">
+              <button class="icon-button" id="deletePageButton" title="Delete page" aria-label="Delete page">
                 <i data-lucide="trash-2"></i>
               </button>
-              <button class="icon-button" id="duplicatePageButton" title="Duplikasi halaman" aria-label="Duplikasi halaman">
+              <button class="icon-button" id="duplicatePageButton" title="Duplicate page" aria-label="Duplicate page">
                 <i data-lucide="copy"></i>
               </button>
-              <select id="statusSelect" aria-label="Status halaman"></select>
+              <select id="statusSelect" aria-label="Page status"></select>
             </div>
 
             <input class="title-input" id="titleInput" type="text" placeholder="Untitled" />
@@ -247,7 +251,7 @@
               </label>
             </div>
 
-            <textarea id="markdownInput" spellcheck="true" placeholder="# Mulai menulis..."></textarea>
+            <textarea id="markdownInput" spellcheck="true" placeholder="# Start writing..."></textarea>
           </section>
 
           <section class="preview-panel">
@@ -263,11 +267,11 @@
           <div class="kanban-header">
             <div>
               <h1>Kanban</h1>
-              <span id="kanbanMeta">0 kartu</span>
+              <span id="kanbanMeta">0 cards</span>
             </div>
             <button class="button" id="newCardButton">
               <i data-lucide="plus"></i>
-              <span>Kartu</span>
+              <span>Card</span>
             </button>
           </div>
           <div class="kanban-board" id="kanbanBoard"></div>
@@ -277,11 +281,11 @@
           <div class="reminder-header">
             <div>
               <h1>Reminders</h1>
-              <span id="reminderMeta">Tidak ada reminder</span>
+              <span id="reminderMeta">No reminders</span>
             </div>
             <button class="button button-quiet" id="requestReminderPermission">
               <i data-lucide="bell-ring"></i>
-              <span>Izinkan</span>
+              <span>Allow</span>
             </button>
           </div>
           <div class="reminder-list" id="reminderList"></div>
@@ -294,15 +298,15 @@
         <div class="modal-header">
           <div>
             <h2 id="authTitle">Login</h2>
-            <span id="authSubtitle">Masuk untuk cloud sync.</span>
+            <span id="authSubtitle">Sign in to enable cloud sync.</span>
           </div>
-          <button class="icon-button" type="button" data-close-dialog aria-label="Tutup">
+          <button class="icon-button" type="button" data-close-dialog aria-label="Close">
             <i data-lucide="x"></i>
           </button>
         </div>
         <label>
-          <span>Nama</span>
-          <input id="authName" type="text" autocomplete="name" placeholder="Nama workspace" />
+          <span>Name</span>
+          <input id="authName" type="text" autocomplete="name" placeholder="Workspace name" />
         </label>
         <label>
           <span>Email</span>
@@ -310,10 +314,10 @@
         </label>
         <label>
           <span>Password</span>
-          <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Minimal 6 karakter" />
+          <input id="authPassword" type="password" autocomplete="current-password" required minlength="6" placeholder="Minimum 6 characters" />
         </label>
         <div class="modal-actions">
-          <button class="button button-quiet" type="button" id="toggleAuthMode">Buat akun</button>
+          <button class="button button-quiet" type="button" id="toggleAuthMode">Create account</button>
           <button class="button" type="submit" id="submitAuthButton">
             <i data-lucide="log-in"></i>
             <span>Login</span>
@@ -329,7 +333,7 @@
             <h2>Settings</h2>
             <span>Manage workspace preferences and cloud sync.</span>
           </div>
-          <button class="icon-button" type="button" data-close-dialog aria-label="Tutup">
+          <button class="icon-button" type="button" data-close-dialog aria-label="Close">
             <i data-lucide="x"></i>
           </button>
         </div>
@@ -367,15 +371,15 @@
       <form class="modal-card" id="pageForm">
         <div class="modal-header">
           <div>
-            <h2>Halaman Baru</h2>
-            <span>Page juga otomatis menjadi kartu Kanban.</span>
+            <h2>New Page</h2>
+            <span>Each page also appears as a Kanban card.</span>
           </div>
-          <button class="icon-button" type="button" data-close-dialog aria-label="Tutup">
+          <button class="icon-button" type="button" data-close-dialog aria-label="Close">
             <i data-lucide="x"></i>
           </button>
         </div>
         <label>
-          <span>Judul</span>
+          <span>Title</span>
           <input id="newPageTitle" type="text" required placeholder="Roadmap Q2" />
         </label>
         <label>
@@ -389,7 +393,7 @@
         <div class="modal-actions">
           <button class="button" type="submit">
             <i data-lucide="plus"></i>
-            <span>Buat</span>
+            <span>Create</span>
           </button>
         </div>
       </form>

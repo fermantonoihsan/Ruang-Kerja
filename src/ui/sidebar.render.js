@@ -3,7 +3,7 @@ import { sanitizeText } from "../utils/helpers.js";
 const $ = (id) => document.getElementById(id);
 
 export function renderSidebar({ state, pages, onSelectPage }) {
-  if ($("workspaceName")) $("workspaceName").textContent = state.workspaceName || "Personal OS";
+  if ($("workspaceName")) $("workspaceName").textContent = state.workspaceName || "My Workspace";
   if ($("pageCount")) $("pageCount").textContent = pages.length;
 
   if ($("pageList")) {
@@ -30,6 +30,6 @@ export function renderSidebar({ state, pages, onSelectPage }) {
 
     $("tagCloud").innerHTML = tags.length
       ? tags.map((tag) => `<span class="chip">#${sanitizeText(tag)}</span>`).join("")
-      : `<span class="muted">Belum ada tag</span>`;
+      : `<span class="muted">No tags yet</span>`;
   }
 }

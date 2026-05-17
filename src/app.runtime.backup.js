@@ -66,7 +66,7 @@ function loadState() {
     icon: "A",
     status: "doing",
     tags: ["welcome", "workspace"],
-    markdown: "# Welcome to Atlas Workspace\n\nTulis catatan, susun task, dan kelola reminder dari satu tempat.",
+    markdown: "# Welcome to Atlas Workspace\n\nCapture notes, organize tasks, and manage reminders from one calm workspace.",
     reminderAt: "",
     reminderDone: false,
     createdAt: nowIso(),
@@ -74,7 +74,7 @@ function loadState() {
   };
 
   return {
-    workspaceName: "Personal OS",
+    workspaceName: "My Workspace",
     selectedPageId: firstPage.id,
     pages: [firstPage],
     updatedAt: nowIso(),
@@ -119,7 +119,7 @@ function setView(view) {
 function renderSidebar() {
   const pages = filteredPages();
 
-  if ($("workspaceName")) $("workspaceName").textContent = state.workspaceName || "Personal OS";
+  if ($("workspaceName")) $("workspaceName").textContent = state.workspaceName || "My Workspace";
   if ($("pageCount")) $("pageCount").textContent = pages.length;
 
   if ($("pageList")) {
@@ -149,7 +149,7 @@ function renderSidebar() {
 
     $("tagCloud").innerHTML = tags.length
       ? tags.map((tag) => `<span class="chip">#${escapeHtml(tag)}</span>`).join("")
-      : `<span class="muted">Belum ada tag</span>`;
+      : `<span class="muted">No tags yet</span>`;
   }
 }
 
@@ -188,8 +188,8 @@ function renderDashboard() {
           .join("")
       : `
           <div class="empty-state">
-            <strong>Belum ada halaman.</strong>
-            <span>Buat halaman pertama untuk mulai menyusun workspace.</span>
+            <strong>No pages yet.</strong>
+            <span>Create your first page to start shaping the workspace.</span>
           </div>
         `;
   }
@@ -212,8 +212,8 @@ function renderDashboard() {
           .join("")
       : `
           <div class="empty-state">
-            <strong>Tidak ada reminder aktif.</strong>
-            <span>Tambahkan reminder dari halaman Notes.</span>
+            <strong>No active reminders.</strong>
+            <span>Add a reminder from any note when something needs attention.</span>
           </div>
         `;
   }
@@ -239,7 +239,7 @@ function renderEditor() {
 function renderKanban() {
   const pages = filteredPages();
 
-  if ($("kanbanMeta")) $("kanbanMeta").textContent = `${pages.length} kartu`;
+  if ($("kanbanMeta")) $("kanbanMeta").textContent = `${pages.length} ${pages.length === 1 ? "card" : "cards"}`;
 
   if (!$("kanbanBoard")) return;
 
@@ -266,7 +266,7 @@ function renderKanban() {
                       `,
                     )
                     .join("")
-                : `<p class="empty-state">Belum ada kartu.</p>`
+                : `<p class="empty-state">No cards yet.</p>`
             }
           </div>
         </section>
@@ -290,7 +290,7 @@ function renderReminders() {
   if ($("reminderMeta")) {
     $("reminderMeta").textContent = reminders.length
       ? `${reminders.length} reminder`
-      : "Tidak ada reminder";
+      : "No reminders";
   }
 
   if (!$("reminderList")) return;
@@ -306,7 +306,7 @@ function renderReminders() {
           `,
         )
         .join("")
-    : `<p class="empty-state">Belum ada reminder.</p>`;
+    : `<p class="empty-state">No reminders yet.</p>`;
 }
 
 function renderUser() {
@@ -336,7 +336,7 @@ function createPage() {
     icon: title.slice(0, 1).toUpperCase(),
     status: $("newPageStatus")?.value || "ideas",
     tags: parseTags($("newPageTags")?.value || ""),
-    markdown: `# ${title}\n\nMulai tulis catatan di sini.`,
+    markdown: `# ${title}\n\nStart writing your notes here.`,
     reminderAt: "",
     reminderDone: false,
     createdAt: nowIso(),

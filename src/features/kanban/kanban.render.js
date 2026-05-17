@@ -3,7 +3,7 @@ import { sanitizeText } from "../../utils/helpers.js";
 const $ = (id) => document.getElementById(id);
 
 export function renderKanban({ pages, columns, onOpenPage }) {
-  if ($("kanbanMeta")) $("kanbanMeta").textContent = `${pages.length} kartu`;
+  if ($("kanbanMeta")) $("kanbanMeta").textContent = `${pages.length} ${pages.length === 1 ? "card" : "cards"}`;
 
   if (!$("kanbanBoard")) return;
 
@@ -30,7 +30,7 @@ export function renderKanban({ pages, columns, onOpenPage }) {
                       `,
                     )
                     .join("")
-                : `<p class="empty-state">Belum ada kartu.</p>`
+                : `<p class="empty-state">No cards yet.</p>`
             }
           </div>
         </section>

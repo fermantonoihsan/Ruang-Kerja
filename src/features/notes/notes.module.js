@@ -15,7 +15,7 @@ export function createPage(pageInput = {}) {
     icon: pageInput.icon || title.slice(0, 1).toUpperCase(),
     status: pageInput.status || "ideas",
     tags: parseTags(pageInput.tags || ""),
-    markdown: pageInput.markdown || `# ${title}\n\nMulai tulis catatan di sini.`,
+    markdown: pageInput.markdown || `# ${title}\n\nStart writing your notes here.`,
     reminderAt: pageInput.reminderAt || "",
     reminderDone: Boolean(pageInput.reminderDone),
     createdAt: getTodayISO(),

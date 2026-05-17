@@ -34,8 +34,8 @@ export function renderDashboard({ state, filteredPages, setView, renderAll }) {
           .join("")
       : `
           <div class="empty-state">
-            <strong>Belum ada halaman.</strong>
-            <span>Buat halaman pertama untuk mulai menyusun workspace.</span>
+            <strong>No pages yet.</strong>
+            <span>Create your first page to start shaping the workspace.</span>
           </div>
         `;
   }
@@ -58,8 +58,8 @@ export function renderDashboard({ state, filteredPages, setView, renderAll }) {
           .join("")
       : `
           <div class="empty-state">
-            <strong>Tidak ada reminder aktif.</strong>
-            <span>Tambahkan reminder dari halaman Notes.</span>
+            <strong>No active reminders.</strong>
+            <span>Add a reminder from any note when something needs attention.</span>
           </div>
         `;
   }

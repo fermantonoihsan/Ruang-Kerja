@@ -11,7 +11,7 @@ function createInitialState() {
     icon: "A",
     status: "doing",
     tags: ["welcome", "workspace"],
-    markdown: "# Welcome to Atlas Workspace\n\nTulis catatan, susun task, dan kelola reminder dari satu tempat.",
+    markdown: "# Welcome to Atlas Workspace\n\nCapture notes, organize tasks, and manage reminders from one calm workspace.",
     reminderAt: "",
     reminderDone: false,
     createdAt: getTodayISO(),
@@ -19,7 +19,7 @@ function createInitialState() {
   };
 
   return {
-    workspaceName: "Personal OS",
+    workspaceName: "My Workspace",
     selectedPageId: firstPage.id,
     pages: [firstPage],
     updatedAt: getTodayISO(),

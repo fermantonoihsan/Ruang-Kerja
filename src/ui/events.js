@@ -127,7 +127,7 @@ export function bindEvents({
     const page = selectedPage();
     if (!page || !currentState.pages?.length) return;
 
-    const shouldDelete = window.confirm(`Hapus halaman "${page.title || "Untitled"}"?`);
+    const shouldDelete = window.confirm(`Delete "${page.title || "Untitled"}"?`);
     if (!shouldDelete) return;
 
     currentState.pages = currentState.pages.filter((item) => item.id !== page.id);
@@ -253,19 +253,19 @@ export function bindEvents({
   function setAuthMode(nextIsRegisterMode) {
     isRegisterMode = nextIsRegisterMode;
 
-    if ($("authTitle")) $("authTitle").textContent = isRegisterMode ? "Buat Akun" : "Login";
+    if ($("authTitle")) $("authTitle").textContent = isRegisterMode ? "Create Account" : "Login";
     if ($("authSubtitle")) {
       $("authSubtitle").textContent = isRegisterMode
-        ? "Buat akun untuk cloud sync."
-        : "Masuk untuk cloud sync.";
+        ? "Create an account to sync your workspace."
+        : "Sign in to enable cloud sync.";
     }
 
     const submitLabel = $("submitAuthButton")?.querySelector("span");
-    if (submitLabel) submitLabel.textContent = isRegisterMode ? "Buat Akun" : "Login";
+    if (submitLabel) submitLabel.textContent = isRegisterMode ? "Create Account" : "Login";
     if ($("toggleAuthMode")) {
       $("toggleAuthMode").textContent = isRegisterMode
-        ? "Sudah punya akun? Login"
-        : "Buat akun";
+        ? "Already have an account? Login"
+        : "Create account";
     }
 
     const nameLabel = $("authName")?.closest("label");

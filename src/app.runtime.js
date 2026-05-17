@@ -100,7 +100,7 @@ function createPage() {
     icon: title.slice(0, 1).toUpperCase(),
     status: $("newPageStatus")?.value || "ideas",
     tags: parseTags($("newPageTags")?.value || ""),
-    markdown: `# ${title}\n\nMulai tulis catatan di sini.`,
+    markdown: `# ${title}\n\nStart writing your notes here.`,
     reminderAt: "",
     reminderDone: false,
     createdAt: getTodayISO(),

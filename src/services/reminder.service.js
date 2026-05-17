@@ -58,7 +58,7 @@ export async function showReminderNotification(page) {
 
   const title = page.title || "Reminder";
   const options = {
-    body: "Reminder dari Atlas Workspace",
+    body: "Reminder from Atlas Workspace",
     icon: "/favicon.svg",
     tag: `atlas-reminder-${page.id || title}`,
     renotify: true,

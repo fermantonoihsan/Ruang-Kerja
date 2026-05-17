@@ -1,9 +1,11 @@
 {
   "name": "atlas-workspace",
   "version": "1.0.0",
+  "description": "A calm, local-first productivity workspace for notes, Kanban planning, reminders, and structured thinking.",
+  "type": "module",
   "private": true,
   "scripts": {
-    "dev": "firebase serve",
+    "dev": "firebase emulators:start --only hosting",
     "serve": "firebase emulators:start --only hosting",
     "deploy": "firebase deploy",
     "deploy:hosting": "firebase deploy --only hosting",
