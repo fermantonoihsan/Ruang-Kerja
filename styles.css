@@ -2098,14 +2098,23 @@ body {
   line-height: 1.45;
 }
 
-.rfq-format-help code {
-  display: block;
-  overflow-x: auto;
-  padding: 10px;
-  border-radius: 8px;
+.rfq-format-columns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.rfq-format-columns span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   background: var(--surface-soft);
   color: var(--muted-strong);
-  white-space: nowrap;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .rfq-card-tags {
