@@ -2075,6 +2075,39 @@ body {
   line-height: 1.45;
 }
 
+.rfq-format-help {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.rfq-format-help summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-weight: 850;
+}
+
+.rfq-format-help p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.rfq-format-help code {
+  display: block;
+  overflow-x: auto;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+  white-space: nowrap;
+}
+
 .rfq-card-tags {
   display: flex;
   flex-wrap: wrap;

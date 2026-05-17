@@ -16,6 +16,7 @@
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-auth-compat.js"></script>
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore-compat.js"></script>
     <script defer src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
     <script type="module" src="./app.js"></script>
   </head>
   <body>
@@ -301,9 +302,13 @@
             </button>
             <label class="button button-light file-button">
               <i data-lucide="upload"></i>
-              <span>Upload CSV</span>
+              <span>Upload CSV/XLSX</span>
               <input id="rfqImportInput" type="file" accept=".csv,text/csv,.xlsx,.xls" />
             </label>
+            <button class="button button-light" id="downloadRfqTemplate" type="button">
+              <i data-lucide="save"></i>
+              <span>Template</span>
+            </button>
           </div>
 
           <div class="rfq-radar">
@@ -312,6 +317,16 @@
               <span>Request -> RFQ Sent -> Quotation Received -> Negotiation -> Approval -> PO Issued -> Delivered</span>
             </div>
           </div>
+
+          <details class="rfq-format-help" open>
+            <summary>CSV/XLSX supplier bid format</summary>
+            <p>
+              Upload a CSV or Excel file with these headers. Header names are flexible, but these are the recommended columns.
+            </p>
+            <code>
+              RFQ Number, Item Name, Specification, Quantity, UOM, Requester, Required Date, Vendor Name, Vendor Contact, Bid Date, Currency, Unit Price, Total Price, Lead Time, Payment Terms, Warranty, Delivery Terms, Technical Compliance, Bid Status, Recommendation, RFQ Status
+            </code>
+          </details>
 
           <div class="kanban-board rfq-board" id="rfqBoard"></div>
         </section>

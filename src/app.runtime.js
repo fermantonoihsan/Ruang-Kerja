@@ -197,13 +197,23 @@ async function importRfqFile(file) {
 
   const fileName = file.name || "";
   const extension = fileName.split(".").pop()?.toLowerCase();
+  let csvText = "";
 
   if (extension === "xlsx" || extension === "xls") {
-    window.alert("For now, please save your Excel sheet as CSV first, then upload the CSV file to Atlas.");
-    return;
+    if (!window.XLSX) {
+      window.alert("Excel import library is still loading or unavailable. Please try again, or save the file as CSV.");
+      return;
+    }
+
+    const buffer = await file.arrayBuffer();
+    const workbook = window.XLSX.read(buffer, { type: "array" });
+    const firstSheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[firstSheetName];
+    csvText = window.XLSX.utils.sheet_to_csv(worksheet);
+  } else {
+    csvText = await file.text();
   }
 
-  const csvText = await file.text();
   const result = importRfqCsvText(csvText, state);
 
   if (!result.imported && !result.updated) {
@@ -219,6 +229,97 @@ async function importRfqFile(file) {
   window.alert(
     `RFQ import complete: ${result.imported} new RFQ item(s), ${result.updated} updated, ${result.bidRows} supplier bid row(s).`,
   );
+}
+
+function downloadRfqTemplate() {
+  const headers = [
+    "RFQ Number",
+    "Item Name",
+    "Specification",
+    "Quantity",
+    "UOM",
+    "Requester",
+    "Required Date",
+    "Vendor Name",
+    "Vendor Contact",
+    "Bid Date",
+    "Currency",
+    "Unit Price",
+    "Total Price",
+    "Lead Time",
+    "Payment Terms",
+    "Warranty",
+    "Delivery Terms",
+    "Technical Compliance",
+    "Bid Status",
+    "Recommendation",
+    "RFQ Status",
+  ];
+
+  const sampleRows = [
+    [
+      "RFQ-001",
+      "Centrifugal Pump",
+      "API 610 compliant pump",
+      "2",
+      "unit",
+      "Maintenance",
+      "2026-06-30",
+      "Vendor A",
+      "sales@vendor-a.com",
+      "2026-05-20",
+      "IDR",
+      "15000000",
+      "30000000",
+      "30 days",
+      "30 days",
+      "12 months",
+      "DAP Plant",
+      "Compliant",
+      "Bid Received",
+      "Recommended",
+      "Quotation Received",
+    ],
+    [
+      "RFQ-001",
+      "Centrifugal Pump",
+      "API 610 compliant pump",
+      "2",
+      "unit",
+      "Maintenance",
+      "2026-06-30",
+      "Vendor B",
+      "sales@vendor-b.com",
+      "2026-05-21",
+      "IDR",
+      "14500000",
+      "29000000",
+      "45 days",
+      "45 days",
+      "12 months",
+      "DAP Plant",
+      "Need Clarification",
+      "Clarification Needed",
+      "Review",
+      "Quotation Received",
+    ],
+  ];
+
+  const csv = [headers, ...sampleRows].map((row) => row.map(csvCell).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "atlas-rfq-supplier-bids-template.csv";
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+function csvCell(value) {
+  const text = String(value ?? "");
+  return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
 function openTemplateChooser() {
@@ -500,6 +601,10 @@ export function initAtlasRuntime() {
     const file = event.target.files?.[0];
     await importRfqFile(file);
     event.target.value = "";
+  });
+
+  $("downloadRfqTemplate")?.addEventListener("click", () => {
+    downloadRfqTemplate();
   });
 
   renderAll();
