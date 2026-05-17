@@ -6,3 +6,13 @@ export const columns = [
   { id: "review", title: "Review" },
   { id: "done", title: "Done" },
 ];
+
+export const rfqColumns = [
+  { id: "request", title: "Request" },
+  { id: "rfq-sent", title: "RFQ Sent" },
+  { id: "quotation-received", title: "Quotation Received" },
+  { id: "negotiation", title: "Negotiation" },
+  { id: "approval", title: "Approval" },
+  { id: "po-issued", title: "PO Issued" },
+  { id: "delivered", title: "Delivered" },
+];

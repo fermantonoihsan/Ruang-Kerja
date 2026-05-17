@@ -111,6 +111,11 @@
   <span>Kanban</span>
 </button>
 
+<button class="nav-item" data-view="rfq">
+  <img src="./assets/icons/kanban-square.svg" class="nav-icon" alt="" />
+  <span>RFQ Tracker</span>
+</button>
+
 <button class="nav-item" data-view="reminders">
   <img src="./assets/icons/alarm-clock.svg" class="nav-icon" alt="" />
   <span>Reminders</span>
@@ -282,6 +287,28 @@
             </button>
           </div>
           <div class="kanban-board" id="kanbanBoard"></div>
+        </section>
+
+        <section class="workspace-view" id="rfqView" aria-label="RFQ tracker view">
+          <div class="kanban-header rfq-header">
+            <div>
+              <h1>RFQ Tracker</h1>
+              <span id="rfqMeta">0 RFQ items</span>
+            </div>
+            <button class="button button-light" id="newRfqButton" type="button">
+              <i data-lucide="plus"></i>
+              <span>RFQ Item</span>
+            </button>
+          </div>
+
+          <div class="rfq-radar">
+            <div>
+              <strong>Procurement flow</strong>
+              <span>Request -> RFQ Sent -> Quotation Received -> Negotiation -> Approval -> PO Issued -> Delivered</span>
+            </div>
+          </div>
+
+          <div class="kanban-board rfq-board" id="rfqBoard"></div>
         </section>
 
         <section class="workspace-view" id="remindersView" aria-label="Reminders view">

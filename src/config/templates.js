@@ -12,6 +12,7 @@ const templateDefinitions = {
         title: "RFQ Follow-up - Vendor Comparison",
         icon: "R",
         status: "doing",
+        rfqStatus: "quotation-received",
         tags: ["rfq", "vendor", "urgent"],
         markdown:
           "# RFQ Follow-up - Vendor Comparison\n\n## Vendors\n- Vendor A: waiting quotation\n- Vendor B: quotation received\n- Vendor C: technical clarification\n\n## Checklist\n- [ ] Compare price and lead time\n- [ ] Validate technical compliance\n- [ ] Prepare negotiation notes\n- [ ] Submit recommendation for approval",
@@ -20,6 +21,7 @@ const templateDefinitions = {
         title: "PO Delivery Tracker",
         icon: "P",
         status: "review",
+        rfqStatus: "po-issued",
         tags: ["po", "delivery", "follow-up"],
         markdown:
           "# PO Delivery Tracker\n\nTrack purchase order delivery status, ETA, receiving confirmation, and blockers.\n\n## Pending Items\n- PO number:\n- Vendor:\n- Expected delivery:\n- Warehouse confirmation:\n- Issue/risk:",
@@ -28,6 +30,7 @@ const templateDefinitions = {
         title: "Vendor Evaluation Notes",
         icon: "V",
         status: "ideas",
+        rfqStatus: "negotiation",
         tags: ["vendor", "evaluation"],
         markdown:
           "# Vendor Evaluation Notes\n\n## Evaluation Criteria\n- Price competitiveness\n- Delivery reliability\n- Document completeness\n- Service responsiveness\n- Safety/compliance record",
@@ -36,6 +39,7 @@ const templateDefinitions = {
         title: "Contract Renewal Reminder",
         icon: "C",
         status: "ideas",
+        rfqStatus: "request",
         tags: ["contract", "renewal"],
         markdown:
           "# Contract Renewal Reminder\n\nUse this page to track agreement expiry, renewal owner, supporting documents, and approval path.",
@@ -139,10 +143,10 @@ export const dashboardProfiles = {
     statusTitle: "Keep sourcing work moving.",
     statusDescription: "Use the board to move items from RFQ and negotiation into review, PO, and delivery follow-up.",
     metrics: [
-      { label: "Open Items", value: "pages" },
-      { label: "Vendor Follow-ups", value: "tag:vendor" },
-      { label: "Under Review", value: "status:review" },
-      { label: "Due Alerts", value: "reminders" },
+      { label: "RFQ Items", value: "rfq:any" },
+      { label: "Negotiation", value: "rfq:negotiation" },
+      { label: "Approval", value: "rfq:approval" },
+      { label: "PO Issued", value: "rfq:po-issued" },
     ],
     recentTitle: "Procurement Queue",
     recentSubtitle: "Latest sourcing work",
@@ -219,6 +223,7 @@ export function createWorkspaceFromTemplate(templateId) {
     title: page.title,
     icon: page.icon,
     status: page.status,
+    rfqStatus: page.rfqStatus || "",
     tags: page.tags,
     markdown: page.markdown,
     reminderAt: "",

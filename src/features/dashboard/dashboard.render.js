@@ -111,5 +111,11 @@ function getMetricValue(metricValue, pages, reminders) {
     return pages.filter((page) => (page.tags || []).includes(tag)).length;
   }
 
+  if (metricValue.startsWith("rfq:")) {
+    const rfqStatus = metricValue.replace("rfq:", "");
+    if (rfqStatus === "any") return pages.filter((page) => page.rfqStatus).length;
+    return pages.filter((page) => page.rfqStatus === rfqStatus).length;
+  }
+
   return 0;
 }

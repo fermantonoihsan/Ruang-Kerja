@@ -2021,6 +2021,56 @@ body {
   transform: rotate(1deg) scale(0.99);
 }
 
+.rfq-board {
+  grid-template-columns: repeat(7, minmax(220px, 1fr));
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.rfq-column {
+  min-width: 220px;
+}
+
+.rfq-radar {
+  margin-bottom: 16px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-soft) 52%, var(--surface));
+}
+
+.rfq-radar div {
+  display: grid;
+  gap: 4px;
+}
+
+.rfq-radar strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.rfq-radar span {
+  color: var(--muted-strong);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.rfq-card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.rfq-card-tags span {
+  min-height: 22px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent-dark);
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .reminder-list {
   max-width: 880px;
 }
@@ -2057,6 +2107,10 @@ select:focus,
 @media (max-width: 1120px) {
   .dashboard-hero {
     grid-template-columns: 1fr;
+  }
+
+  .rfq-board {
+    grid-template-columns: repeat(7, minmax(220px, 1fr));
   }
 }
 

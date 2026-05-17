@@ -1,4 +1,4 @@
-import { columns } from "./config/constants.js";
+import { columns, rfqColumns } from "./config/constants.js";
 import {
   clearFirebaseConfig,
   getFirebaseConfig,
@@ -9,6 +9,7 @@ import { renderDashboard } from "./features/dashboard/dashboard.render.js";
 import { renderKanban } from "./features/kanban/kanban.render.js";
 import { renderEditor } from "./features/notes/notes.render.js";
 import { renderReminders } from "./features/reminders/reminders.render.js";
+import { renderRfqTracker } from "./features/rfq/rfq.render.js";
 import {
   getCurrentUser,
   onAuthStateChanged,
@@ -100,6 +101,7 @@ function setView(view) {
     ["dashboard", $("dashboardView")],
     ["notes", $("notesView")],
     ["kanban", $("kanbanView")],
+    ["rfq", $("rfqView")],
     ["reminders", $("remindersView")],
   ].forEach(([name, node]) => {
     if (node) node.classList.toggle("active", name === view);
@@ -126,6 +128,16 @@ function movePageToStatus(pageId, status) {
   renderAll();
 }
 
+function moveRfqToStatus(pageId, rfqStatus) {
+  const page = state.pages.find((item) => item.id === pageId);
+  if (!page || !rfqColumns.some((column) => column.id === rfqStatus)) return;
+
+  page.rfqStatus = rfqStatus;
+  page.updatedAt = getTodayISO();
+  saveState();
+  renderAll();
+}
+
 function createPage() {
   const title = $("newPageTitle")?.value?.trim() || "Untitled";
 
@@ -134,6 +146,7 @@ function createPage() {
     title,
     icon: title.slice(0, 1).toUpperCase(),
     status: $("newPageStatus")?.value || "ideas",
+    rfqStatus: state.templateId === "procurement" ? "request" : "",
     tags: parseTags($("newPageTags")?.value || ""),
     markdown: `# ${title}\n\nStart writing your notes here.`,
     reminderAt: "",
@@ -150,6 +163,30 @@ function createPage() {
   closeDialog("pageDialog");
 
   activeView = "notes";
+  renderAll();
+}
+
+function createRfqItem() {
+  const now = getTodayISO();
+  const page = {
+    id: generateId("page"),
+    title: "New RFQ Item",
+    icon: "R",
+    status: "doing",
+    rfqStatus: "request",
+    tags: ["rfq", "procurement"],
+    markdown:
+      "# New RFQ Item\n\n## Request\n- Requester:\n- Item/service:\n- Required date:\n- Budget type:\n\n## Vendors\n- Vendor A:\n- Vendor B:\n- Vendor C:\n\n## Checklist\n- [ ] Confirm specification\n- [ ] Send RFQ\n- [ ] Compare quotations\n- [ ] Negotiate\n- [ ] Submit for approval\n- [ ] Issue PO\n- [ ] Track delivery",
+    reminderAt: "",
+    reminderDone: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+  activeView = "rfq";
   renderAll();
 }
 
@@ -182,6 +219,7 @@ function applyTemplate(templateId) {
 
 function renderAll() {
   state = getState();
+  ensureProcurementRfqStatuses();
   const pages = filteredPages();
 
   applyWorkspacePreferences(state.preferences);
@@ -190,9 +228,42 @@ function renderAll() {
   renderDashboard({ state, filteredPages: pages, setView, renderAll });
   renderEditor({ page: selectedPage() });
   renderKanban({ pages, columns, onOpenPage: selectPage, onMovePage: movePageToStatus });
+  renderRfqTracker({ pages, columns: rfqColumns, onOpenPage: selectPage, onMoveRfq: moveRfqToStatus });
   renderReminders({ pages });
   renderUser({ user: currentUser, syncStatus, guestName: state.displayName });
   refreshIcons();
+}
+
+function ensureProcurementRfqStatuses() {
+  if (state.templateId !== "procurement") return;
+
+  let didPatch = false;
+
+  (state.pages || []).forEach((page) => {
+    if (page.rfqStatus) return;
+
+    const tags = page.tags || [];
+    const title = (page.title || "").toLowerCase();
+
+    if (tags.includes("po") || title.includes("po ")) {
+      page.rfqStatus = "po-issued";
+    } else if (tags.includes("vendor") || tags.includes("evaluation")) {
+      page.rfqStatus = "negotiation";
+    } else if (tags.includes("rfq") || title.includes("rfq")) {
+      page.rfqStatus = "quotation-received";
+    } else if (tags.includes("contract")) {
+      page.rfqStatus = "request";
+    }
+
+    if (page.rfqStatus) {
+      didPatch = true;
+    }
+  });
+
+  if (didPatch) {
+    saveState();
+    state = getState();
+  }
 }
 
 function applyWorkspacePreferences(preferences = {}) {
@@ -374,6 +445,10 @@ export function initAtlasRuntime() {
 
   $("openTemplateChooser")?.addEventListener("click", () => {
     openTemplateChooser();
+  });
+
+  $("newRfqButton")?.addEventListener("click", () => {
+    createRfqItem();
   });
 
   renderAll();
