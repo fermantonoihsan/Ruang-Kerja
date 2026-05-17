@@ -271,6 +271,7 @@ function renderTemplateVisibility() {
 
   document.querySelectorAll("[data-procurement-only]").forEach((node) => {
     node.hidden = !isProcurement;
+    node.style.display = isProcurement ? "" : "none";
   });
 
   if (!isProcurement && activeView === "rfq") {
