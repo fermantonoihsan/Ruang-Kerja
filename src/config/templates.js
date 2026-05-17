@@ -3,7 +3,7 @@ import { generateId, getTodayISO } from "../utils/helpers.js";
 const templateDefinitions = {
   procurement: {
     id: "procurement",
-    label: "Procurement",
+    label: "Mode Procurement",
     workspaceName: "Procurement Workspace",
     displayName: "Procurement Staff",
     description: "Track vendors, RFQs, purchase orders, deliveries, and contract follow-ups.",
@@ -48,7 +48,7 @@ const templateDefinitions = {
   },
   staff: {
     id: "staff",
-    label: "Office Staff",
+    label: "Mode Office Staff",
     workspaceName: "Staff Daily Workspace",
     displayName: "Office Staff",
     description: "Organize daily administration, meeting notes, document follow-ups, and reminders.",
@@ -89,7 +89,7 @@ const templateDefinitions = {
   },
   manager: {
     id: "manager",
-    label: "Manager",
+    label: "Mode Manager",
     workspaceName: "Manager Command Center",
     displayName: "Manager",
     description: "Monitor programs, decisions, reviews, deadlines, and cross-team execution.",
@@ -130,7 +130,7 @@ const templateDefinitions = {
   },
   "bps-manager": {
     id: "bps-manager",
-    label: "Kepala Kantor BPS",
+    label: "Mode Kepala Kantor BPS",
     workspaceName: "Dashboard Kepala Kantor BPS",
     displayName: "Kepala Kantor BPS",
     description:

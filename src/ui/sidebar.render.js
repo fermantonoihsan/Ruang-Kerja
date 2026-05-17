@@ -4,6 +4,7 @@ const $ = (id) => document.getElementById(id);
 
 export function renderSidebar({ state, pages, onSelectPage }) {
   if ($("workspaceName")) $("workspaceName").textContent = state.workspaceName || "My Workspace";
+  if ($("workspaceModeLabel")) $("workspaceModeLabel").textContent = getModeLabel(state.templateId);
   if ($("pageCount")) $("pageCount").textContent = pages.length;
 
   if ($("pageList")) {
@@ -33,4 +34,15 @@ export function renderSidebar({ state, pages, onSelectPage }) {
       : `<span class="muted">No tags yet</span>`;
   }
 
+}
+
+function getModeLabel(templateId = "") {
+  const labels = {
+    procurement: "Mode Procurement",
+    staff: "Mode Office Staff",
+    manager: "Mode Manager",
+    "bps-manager": "Mode Kepala Kantor BPS",
+  };
+
+  return labels[templateId] || "Default Mode";
 }

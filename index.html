@@ -20,6 +20,118 @@
     <script type="module" src="./app.js"></script>
   </head>
   <body>
+    <section class="landing-page" id="landingPage" aria-label="Atlas Workspace landing page">
+      <header class="landing-nav">
+        <div class="landing-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <span class="brand-glyph">A</span>
+          </span>
+          <div>
+            <strong>Atlas Workspace</strong>
+            <span>Command workspace for focused teams</span>
+          </div>
+        </div>
+        <div class="landing-nav-actions">
+          <button class="button button-quiet" type="button" id="landingGuestButton">
+            <i data-lucide="log-in"></i>
+            <span>Masuk Workspace</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="landing-main">
+        <section class="landing-copy">
+          <span class="landing-chip">Atlas Command OS</span>
+          <h1>Decisions move faster when every signal is visible.</h1>
+          <p>
+            Masuk ke ruang kerja operasional untuk memantau program, keputusan, rapat, deadline, dan mode kerja khusus
+            seperti Procurement atau Kepala Kantor BPS.
+          </p>
+          <div class="landing-actions">
+            <button class="button" type="button" id="landingPrimaryButton">
+              <i data-lucide="layout-dashboard"></i>
+              <span>Lanjut sebagai Guest</span>
+            </button>
+            <button class="button button-light" type="button" id="landingRegisterShortcut">
+              <i data-lucide="user-plus"></i>
+              <span>Buat Akun</span>
+            </button>
+          </div>
+          <div class="landing-mode-row" aria-label="Available modes">
+            <span>Procurement</span>
+            <span>Office Staff</span>
+            <span>Manager</span>
+            <span>Kepala Kantor BPS</span>
+          </div>
+        </section>
+
+        <section class="landing-showcase" aria-label="Atlas workspace preview">
+          <div class="motion-orbit one"></div>
+          <div class="motion-orbit two"></div>
+          <div class="landing-terminal">
+            <span>ATLAS / LIVE SIGNAL</span>
+            <strong>Mode-ready workspace</strong>
+          </div>
+          <div class="showcase-card main">
+            <div class="showcase-card-header">
+              <span>Mode Kepala Kantor</span>
+              <strong>72%</strong>
+            </div>
+            <div class="showcase-bars">
+              <span style="width: 78%"></span>
+              <span style="width: 54%"></span>
+              <span style="width: 34%"></span>
+            </div>
+          </div>
+          <div class="showcase-card floating top">
+            <span>Mode Procurement</span>
+            <strong>RFQ flow</strong>
+          </div>
+          <div class="showcase-card floating bottom">
+            <span>Mode Staff</span>
+            <strong>Daily ops</strong>
+          </div>
+        </section>
+
+        <aside class="landing-auth-card">
+          <div class="landing-auth-tabs" role="tablist" aria-label="Auth mode">
+            <button class="active" type="button" id="landingLoginTab">Masuk</button>
+            <button type="button" id="landingRegisterTab">Registrasi</button>
+          </div>
+          <form id="landingAuthForm" class="landing-auth-form">
+            <label id="landingNameLabel" hidden>
+              <span>Nama</span>
+              <input id="landingNameInput" type="text" autocomplete="name" placeholder="Nama pengguna" />
+            </label>
+            <label>
+              <span>Email</span>
+              <input id="landingEmailInput" type="email" autocomplete="email" placeholder="email@domain.com" required />
+            </label>
+            <label>
+              <span>Password</span>
+              <input
+                id="landingPasswordInput"
+                type="password"
+                autocomplete="current-password"
+                minlength="6"
+                placeholder="Minimal 6 karakter"
+                required
+              />
+            </label>
+            <button class="button" type="submit" id="landingSubmitButton">
+              <i data-lucide="log-in"></i>
+              <span>Masuk</span>
+            </button>
+            <button class="button button-light" type="button" id="landingGuestInlineButton">
+              <i data-lucide="user"></i>
+              <span>Lanjut sebagai Guest</span>
+            </button>
+            <p id="landingAuthMessage" class="landing-auth-message" aria-live="polite"></p>
+          </form>
+        </aside>
+      </main>
+    </section>
+
     <div class="app-shell">
       <header class="topbar">
         <button class="icon-button" id="sidebarToggle" title="Menu" aria-label="Menu">
@@ -27,7 +139,9 @@
         </button>
 
         <div class="brand">
-          <span class="brand-mark">A</span>
+          <span class="brand-mark" aria-hidden="true">
+            <span class="brand-glyph">A</span>
+          </span>
           <div>
             <strong>Atlas Workspace</strong>
             <span>Calm Productivity Workspace</span>
@@ -87,6 +201,7 @@
           <div>
             <span>Current Space</span>
             <strong id="workspaceName">My Workspace</strong>
+            <small id="workspaceModeLabel">Default Mode</small>
           </div>
           <button class="icon-button" id="newPageButton" title="New page" aria-label="New page">
             <i data-lucide="plus"></i>
@@ -120,6 +235,16 @@
 <button class="nav-item" data-view="se2026" data-bps-manager-only>
   <i data-lucide="activity"></i>
   <span>SE2026 Executive</span>
+</button>
+
+<button class="nav-item" data-view="decisions" data-bps-manager-only>
+  <i data-lucide="check-square"></i>
+  <span>Decision Register</span>
+</button>
+
+<button class="nav-item" data-view="meetings" data-bps-manager-only>
+  <i data-lucide="notebook-tabs"></i>
+  <span>Rapat + Notulen</span>
 </button>
 
 <button class="nav-item" data-view="reminders">
@@ -476,6 +601,192 @@
           <div class="kanban-board" id="kanbanBoard"></div>
         </section>
 
+        <section class="workspace-view" id="decisionsView" aria-label="Decision register view">
+          <div class="leadership-header">
+            <div>
+              <span class="eyebrow">Decision Register</span>
+              <h1>Keputusan pimpinan yang perlu diputuskan, dijalankan, dan diwariskan.</h1>
+              <p>Catat konteks, dasar pertimbangan, PIC, deadline, dampak, dan status follow-up agar memori institusi tidak tercecer.</p>
+            </div>
+          </div>
+
+          <div class="leadership-stats">
+            <article class="leadership-stat">
+              <span>Total keputusan</span>
+              <strong id="decisionTotal">0</strong>
+            </article>
+            <article class="leadership-stat">
+              <span>Belum ditutup</span>
+              <strong id="decisionOpen">0</strong>
+            </article>
+            <article class="leadership-stat">
+              <span>Memiliki deadline</span>
+              <strong id="decisionDue">0</strong>
+            </article>
+            <article class="leadership-stat">
+              <span>Dampak tinggi/kritis</span>
+              <strong id="decisionHighImpact">0</strong>
+            </article>
+          </div>
+
+          <div class="leadership-layout">
+            <section class="leadership-panel">
+              <div class="panel-header">
+                <h2>Tambah Keputusan</h2>
+                <span>Register pimpinan</span>
+              </div>
+              <form class="leadership-form" id="decisionForm">
+                <label>
+                  <span>Tanggal</span>
+                  <input id="decisionDateInput" type="date" required />
+                </label>
+                <label>
+                  <span>Konteks</span>
+                  <input id="decisionContextInput" type="text" placeholder="Masalah atau kebutuhan keputusan" required />
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Keputusan</span>
+                  <textarea id="decisionTextInput" placeholder="Keputusan pimpinan" required></textarea>
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Dasar pertimbangan</span>
+                  <textarea id="decisionBasisInput" placeholder="Data, risiko, regulasi, arahan, atau kondisi lapangan"></textarea>
+                </label>
+                <label>
+                  <span>PIC pelaksana</span>
+                  <input id="decisionPicInput" type="text" placeholder="Nama/fungsi" />
+                </label>
+                <label>
+                  <span>Deadline</span>
+                  <input id="decisionDeadlineInput" type="date" />
+                </label>
+                <label>
+                  <span>Dampak</span>
+                  <select id="decisionImpactInput">
+                    <option value="medium">Sedang</option>
+                    <option value="low">Rendah</option>
+                    <option value="high">Tinggi</option>
+                    <option value="critical">Kritis</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Status follow-up</span>
+                  <select id="decisionStatusInput">
+                    <option value="open">Open</option>
+                    <option value="in-progress">In Progress</option>
+                    <option value="waiting">Waiting</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </label>
+                <button class="button leadership-wide-field" type="submit">
+                  <i data-lucide="save"></i>
+                  <span>Simpan Keputusan</span>
+                </button>
+              </form>
+            </section>
+
+            <section class="leadership-panel">
+              <div class="panel-header">
+                <h2>Register Keputusan</h2>
+                <span>Masalah mana yang harus diputuskan hari ini</span>
+              </div>
+              <div class="leadership-list" id="decisionRegisterList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="workspace-view" id="meetingsView" aria-label="Meeting minutes view">
+          <div class="leadership-header">
+            <div>
+              <span class="eyebrow">Rapat + Notulen Otomatis</span>
+              <h1>Setiap rapat langsung menjadi notulen terstruktur dan bisa dibuat page.</h1>
+              <p>Format tetap: agenda, peserta, keputusan, PIC, deadline, follow-up, isu tertunda, dan link dokumen.</p>
+            </div>
+          </div>
+
+          <div class="leadership-stats">
+            <article class="leadership-stat">
+              <span>Total rapat</span>
+              <strong id="meetingTotal">0</strong>
+            </article>
+            <article class="leadership-stat">
+              <span>Follow-up</span>
+              <strong id="meetingFollowUps">0</strong>
+            </article>
+            <article class="leadership-stat">
+              <span>Keputusan</span>
+              <strong id="meetingDecisions">0</strong>
+            </article>
+            <article class="leadership-stat">
+              <span>Isu tertunda</span>
+              <strong id="meetingPendingIssues">0</strong>
+            </article>
+          </div>
+
+          <div class="leadership-layout">
+            <section class="leadership-panel">
+              <div class="panel-header">
+                <h2>Tambah Rapat</h2>
+                <span>Notulen standar pimpinan</span>
+              </div>
+              <form class="leadership-form" id="meetingForm">
+                <label>
+                  <span>Tanggal</span>
+                  <input id="meetingDateInput" type="date" required />
+                </label>
+                <label>
+                  <span>Judul rapat</span>
+                  <input id="meetingTitleInput" type="text" placeholder="Rapat koordinasi SE2026" required />
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Agenda</span>
+                  <textarea id="meetingAgendaInput" placeholder="Agenda rapat" required></textarea>
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Peserta</span>
+                  <textarea id="meetingParticipantsInput" placeholder="Daftar peserta"></textarea>
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Keputusan</span>
+                  <textarea id="meetingDecisionsInput" placeholder="Keputusan rapat"></textarea>
+                </label>
+                <label>
+                  <span>PIC</span>
+                  <input id="meetingPicInput" type="text" placeholder="PIC tindak lanjut" />
+                </label>
+                <label>
+                  <span>Deadline</span>
+                  <input id="meetingDeadlineInput" type="date" />
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Follow-up</span>
+                  <textarea id="meetingFollowUpInput" placeholder="Tindak lanjut per baris"></textarea>
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Isu tertunda</span>
+                  <textarea id="meetingPendingIssuesInput" placeholder="Isu yang belum selesai"></textarea>
+                </label>
+                <label class="leadership-wide-field">
+                  <span>Link dokumen</span>
+                  <input id="meetingDocumentLinkInput" type="url" placeholder="https://..." />
+                </label>
+                <button class="button leadership-wide-field" type="submit">
+                  <i data-lucide="save"></i>
+                  <span>Simpan Notulen</span>
+                </button>
+              </form>
+            </section>
+
+            <section class="leadership-panel">
+              <div class="panel-header">
+                <h2>Notulen Terstruktur</h2>
+                <span>Bisa dikonversi menjadi page Atlas</span>
+              </div>
+              <div class="leadership-list" id="meetingMinutesList"></div>
+            </section>
+          </div>
+        </section>
+
         <section class="workspace-view" id="rfqView" aria-label="RFQ tracker view">
           <div class="kanban-header rfq-header">
             <div>
@@ -590,8 +901,8 @@
       <div class="modal-card template-card">
         <div class="modal-header">
           <div>
-            <h2>Choose your workspace template</h2>
-            <span>Start with a setup that matches your daily work.</span>
+            <h2>Choose your workspace mode</h2>
+            <span>Start with a mode that matches your daily work.</span>
           </div>
           <button class="icon-button" type="button" data-close-dialog aria-label="Close">
             <i data-lucide="x"></i>
@@ -601,25 +912,25 @@
         <div class="template-grid">
           <button class="template-option" type="button" data-template-choice="procurement">
             <span class="template-mark">P</span>
-            <strong>Procurement</strong>
+            <strong>Mode Procurement</strong>
             <small>Vendor follow-up, RFQ, PO delivery, contracts, and procurement reminders.</small>
           </button>
 
           <button class="template-option" type="button" data-template-choice="staff">
             <span class="template-mark">S</span>
-            <strong>Office Staff</strong>
+            <strong>Mode Office Staff</strong>
             <small>Daily tasks, meeting notes, document follow-up, and weekly reporting.</small>
           </button>
 
           <button class="template-option" type="button" data-template-choice="manager">
             <span class="template-mark">M</span>
-            <strong>Manager</strong>
+            <strong>Mode Manager</strong>
             <small>Program monitoring, leadership notes, report review, and strategic issues.</small>
           </button>
 
           <button class="template-option" type="button" data-template-choice="bps-manager">
             <span class="template-mark">B</span>
-            <strong>Kepala Kantor BPS</strong>
+            <strong>Mode Kepala Kantor BPS</strong>
             <small>Monitoring program statistik, agenda rapat, deadline laporan, review, dan approval pimpinan.</small>
           </button>
         </div>
@@ -642,11 +953,11 @@
           <p>Personalize how this workspace appears on your device.</p>
         </div>
         <div class="settings-section">
-          <h3>Workspace Template</h3>
-          <p>Switch between Procurement, Office Staff, and Manager starter boards.</p>
+          <h3>Workspace Mode</h3>
+          <p>Switch between Procurement, Office Staff, Manager, and Kepala Kantor BPS modes.</p>
           <button class="button button-light" type="button" id="openTemplateChooser">
             <i data-lucide="layout-dashboard"></i>
-            <span>Change Template</span>
+            <span>Change Mode</span>
           </button>
         </div>
         <label>

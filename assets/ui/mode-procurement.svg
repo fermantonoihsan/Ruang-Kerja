@@ -1,0 +1,20 @@
+<svg width="640" height="420" viewBox="0 0 640 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Procurement workflow illustration">
+  <rect width="640" height="420" rx="28" fill="#F5FAF8"/>
+  <path d="M92 96h456v228H92z" fill="#fff" stroke="#C9DED8" stroke-width="3"/>
+  <path d="M126 140h120v44H126z" fill="#DDEFEA" stroke="#0F766E" stroke-width="3"/>
+  <path d="M126 214h120v44H126z" fill="#EEF6FF" stroke="#2F6690" stroke-width="3"/>
+  <path d="M394 140h120v44H394z" fill="#FFF3D6" stroke="#D69E2E" stroke-width="3"/>
+  <path d="M394 214h120v44H394z" fill="#FBE9E0" stroke="#C46A3D" stroke-width="3"/>
+  <path d="M272 161h86" stroke="#0F766E" stroke-width="8" stroke-linecap="round"/>
+  <path d="M354 161l-18-16v32l18-16Z" fill="#0F766E"/>
+  <path d="M272 236h86" stroke="#2F6690" stroke-width="8" stroke-linecap="round"/>
+  <path d="M354 236l-18-16v32l18-16Z" fill="#2F6690"/>
+  <circle cx="186" cy="96" r="28" fill="#0F766E"/>
+  <path d="M174 96l8 8 17-18" stroke="#fff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="454" cy="96" r="28" fill="#D69E2E"/>
+  <path d="M442 96h24M454 84v24" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M158 304h324" stroke="#C9DED8" stroke-width="8" stroke-linecap="round"/>
+  <path d="M158 304h214" stroke="#0F766E" stroke-width="8" stroke-linecap="round"/>
+  <circle cx="372" cy="304" r="15" fill="#0F766E" stroke="#fff" stroke-width="5"/>
+  <path d="M118 354h404" stroke="#D5E6E1" stroke-width="3" stroke-linecap="round"/>
+</svg>

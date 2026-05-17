@@ -6,6 +6,13 @@ import {
 } from "./config/firebase.config.js";
 import { createWorkspaceFromTemplate } from "./config/templates.js";
 import { renderDashboard } from "./features/dashboard/dashboard.render.js";
+import {
+  decisionToMarkdown,
+  getLeadershipState,
+  meetingToMarkdown,
+  renderDecisionRegister,
+  renderMeetingMinutes,
+} from "./features/bps-leadership/bps-leadership.render.js";
 import { renderKanban } from "./features/kanban/kanban.render.js";
 import { renderEditor } from "./features/notes/notes.render.js";
 import { renderReminders } from "./features/reminders/reminders.render.js";
@@ -79,6 +86,7 @@ let syncStatus = "local";
 let unsubscribeAuth = null;
 let reminderTimer = null;
 let checkingReminders = false;
+let landingRegisterMode = false;
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -99,6 +107,8 @@ function setView(view) {
   let nextView = view;
   if (view === "rfq" && state?.templateId !== "procurement") nextView = "dashboard";
   if (view === "se2026" && state?.templateId !== "bps-manager") nextView = "dashboard";
+  if (view === "decisions" && state?.templateId !== "bps-manager") nextView = "dashboard";
+  if (view === "meetings" && state?.templateId !== "bps-manager") nextView = "dashboard";
   activeView = nextView;
 
   document.querySelectorAll("[data-view]").forEach((button) => {
@@ -109,12 +119,70 @@ function setView(view) {
     ["dashboard", $("dashboardView")],
     ["notes", $("notesView")],
     ["se2026", $("se2026View")],
+    ["decisions", $("decisionsView")],
+    ["meetings", $("meetingsView")],
     ["kanban", $("kanbanView")],
     ["rfq", $("rfqView")],
     ["reminders", $("remindersView")],
   ].forEach(([name, node]) => {
     if (node) node.classList.toggle("active", name === nextView);
   });
+}
+
+function showLanding() {
+  document.body.classList.add("landing-active");
+}
+
+function enterWorkspace() {
+  document.body.classList.remove("landing-active");
+  window.sessionStorage.setItem("atlas_landing_seen", "true");
+  refreshIcons();
+}
+
+function shouldShowLanding() {
+  return window.sessionStorage.getItem("atlas_landing_seen") !== "true" && !getCurrentUser();
+}
+
+function setLandingAuthMode(isRegisterMode) {
+  landingRegisterMode = isRegisterMode;
+  $("landingLoginTab")?.classList.toggle("active", !landingRegisterMode);
+  $("landingRegisterTab")?.classList.toggle("active", landingRegisterMode);
+
+  const nameLabel = $("landingNameLabel");
+  if (nameLabel) nameLabel.hidden = !landingRegisterMode;
+  if ($("landingNameInput")) $("landingNameInput").required = landingRegisterMode;
+
+  const submitLabel = $("landingSubmitButton")?.querySelector("span");
+  if (submitLabel) submitLabel.textContent = landingRegisterMode ? "Daftar" : "Masuk";
+}
+
+async function submitLandingAuth() {
+  const email = $("landingEmailInput")?.value?.trim() || "";
+  const password = $("landingPasswordInput")?.value || "";
+  const name = $("landingNameInput")?.value?.trim() || "";
+  const submitButton = $("landingSubmitButton");
+  const message = $("landingAuthMessage");
+
+  try {
+    if (submitButton) submitButton.disabled = true;
+    if (message) message.textContent = landingRegisterMode ? "Mendaftarkan akun..." : "Masuk ke workspace...";
+
+    if (landingRegisterMode) {
+      await signUpWithEmail(name, email, password);
+    } else {
+      await signInWithEmail(email, password);
+    }
+
+    $("landingAuthForm")?.reset();
+    if (message) message.textContent = "";
+    enterWorkspace();
+  } catch (error) {
+    console.warn("[landing] Auth failed:", error);
+    if (message) message.textContent = "Masuk/registrasi belum berhasil. Periksa email, password, atau konfigurasi Firebase.";
+    setSyncStatus("error");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
 }
 
 function selectPage(pageId) {
@@ -344,7 +412,7 @@ function applyTemplate(templateId) {
 
   if (hasExistingWorkspace) {
     const shouldReplace = window.confirm(
-      "Changing template will replace your current workspace pages with the selected starter board. Continue?",
+      "Changing mode will replace your current workspace pages with the selected starter board. Continue?",
     );
 
     if (!shouldReplace) return;
@@ -361,6 +429,7 @@ function applyTemplate(templateId) {
 function renderAll() {
   state = getState();
   ensureSe2026ExecutiveState();
+  ensureBpsLeadershipState();
   ensureProcurementRfqStatuses();
   ensurePageStatuses();
   const pages = filteredPages();
@@ -375,6 +444,17 @@ function renderAll() {
   renderSe2026ExecutiveDashboard({
     state,
     onRemovePublicUpdate: removeSe2026PublicUpdate,
+  });
+  renderDecisionRegister({
+    state,
+    onRemoveDecision: removeDecision,
+    onStatusChange: updateDecisionStatus,
+    onCreatePage: createPageFromDecision,
+  });
+  renderMeetingMinutes({
+    state,
+    onRemoveMeeting: removeMeeting,
+    onCreatePage: createPageFromMeeting,
   });
   renderEditor({ page: selectedPage() });
   renderKanban({ pages, columns: workspaceColumns, onOpenPage: selectPage, onMovePage: movePageToStatus });
@@ -404,6 +484,213 @@ function renderTemplateVisibility() {
 
   if (!isBpsManager && activeView === "se2026") {
     activeView = "dashboard";
+  }
+
+  if (!isBpsManager && (activeView === "decisions" || activeView === "meetings")) {
+    activeView = "dashboard";
+  }
+}
+
+function ensureBpsLeadershipState() {
+  if (state.templateId !== "bps-manager") return;
+  if (state.bpsLeadership) return;
+
+  state.bpsLeadership = {
+    ...defaultBpsLeadershipState(),
+  };
+  saveState();
+  state = getState();
+}
+
+function addDecision() {
+  const leadership = getLeadershipState(state);
+  const decision = {
+    id: generateId("decision"),
+    date: $("decisionDateInput")?.value || new Date().toISOString().slice(0, 10),
+    context: $("decisionContextInput")?.value?.trim() || "",
+    decision: $("decisionTextInput")?.value?.trim() || "",
+    basis: $("decisionBasisInput")?.value?.trim() || "",
+    pic: $("decisionPicInput")?.value?.trim() || "",
+    deadline: $("decisionDeadlineInput")?.value || "",
+    impact: $("decisionImpactInput")?.value || "medium",
+    status: $("decisionStatusInput")?.value || "open",
+    createdAt: getTodayISO(),
+    updatedAt: getTodayISO(),
+  };
+
+  state.bpsLeadership = {
+    ...leadership,
+    decisions: [decision, ...(leadership.decisions || [])],
+  };
+
+  saveState();
+  $("decisionForm")?.reset();
+  setTodayInput("decisionDateInput");
+  renderAll();
+}
+
+function removeDecision(decisionId) {
+  const leadership = getLeadershipState(state);
+  state.bpsLeadership = {
+    ...leadership,
+    decisions: (leadership.decisions || []).filter((decision) => decision.id !== decisionId),
+  };
+  saveState();
+  renderAll();
+}
+
+function updateDecisionStatus(decisionId, status) {
+  const leadership = getLeadershipState(state);
+  state.bpsLeadership = {
+    ...leadership,
+    decisions: (leadership.decisions || []).map((decision) =>
+      decision.id === decisionId
+        ? {
+            ...decision,
+            status,
+            updatedAt: getTodayISO(),
+          }
+        : decision,
+    ),
+  };
+  saveState();
+  renderAll();
+}
+
+function addMeeting() {
+  const leadership = getLeadershipState(state);
+  const meeting = {
+    id: generateId("meeting"),
+    date: $("meetingDateInput")?.value || new Date().toISOString().slice(0, 10),
+    title: $("meetingTitleInput")?.value?.trim() || "Rapat",
+    agenda: $("meetingAgendaInput")?.value?.trim() || "",
+    participants: $("meetingParticipantsInput")?.value?.trim() || "",
+    decisions: $("meetingDecisionsInput")?.value?.trim() || "",
+    pic: $("meetingPicInput")?.value?.trim() || "",
+    deadline: $("meetingDeadlineInput")?.value || "",
+    followUp: $("meetingFollowUpInput")?.value?.trim() || "",
+    pendingIssues: $("meetingPendingIssuesInput")?.value?.trim() || "",
+    documentLink: normalizePublicUrl($("meetingDocumentLinkInput")?.value || "") || "",
+    createdAt: getTodayISO(),
+    updatedAt: getTodayISO(),
+  };
+
+  state.bpsLeadership = {
+    ...leadership,
+    meetings: [meeting, ...(leadership.meetings || [])],
+  };
+
+  saveState();
+  $("meetingForm")?.reset();
+  setTodayInput("meetingDateInput");
+  renderAll();
+}
+
+function removeMeeting(meetingId) {
+  const leadership = getLeadershipState(state);
+  state.bpsLeadership = {
+    ...leadership,
+    meetings: (leadership.meetings || []).filter((meeting) => meeting.id !== meetingId),
+  };
+  saveState();
+  renderAll();
+}
+
+function createPageFromMeeting(meetingId) {
+  const leadership = getLeadershipState(state);
+  const meeting = (leadership.meetings || []).find((item) => item.id === meetingId);
+  if (!meeting) return;
+
+  const page = {
+    id: generateId("page"),
+    title: `Notulen - ${meeting.title || "Rapat"}`,
+    icon: "N",
+    status: "planned",
+    rfqStatus: "",
+    tags: ["rapat", "notulen", "keputusan"],
+    markdown: meetingToMarkdown(meeting),
+    reminderAt: meeting.deadline ? `${meeting.deadline}T09:00` : "",
+    reminderDone: false,
+    createdAt: getTodayISO(),
+    updatedAt: getTodayISO(),
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+  activeView = "notes";
+  renderAll();
+}
+
+function createPageFromDecision(decisionId) {
+  const leadership = getLeadershipState(state);
+  const decision = (leadership.decisions || []).find((item) => item.id === decisionId);
+  if (!decision) return;
+
+  const page = {
+    id: generateId("page"),
+    title: `Keputusan - ${decision.context || "Pimpinan"}`,
+    icon: "K",
+    status: "planned",
+    rfqStatus: "",
+    tags: ["keputusan", "approval pimpinan"],
+    markdown: decisionToMarkdown(decision),
+    reminderAt: decision.deadline ? `${decision.deadline}T09:00` : "",
+    reminderDone: false,
+    createdAt: getTodayISO(),
+    updatedAt: getTodayISO(),
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+  activeView = "notes";
+  renderAll();
+}
+
+function defaultBpsLeadershipState() {
+  return {
+    decisions: [
+      {
+        id: generateId("decision"),
+        seedKey: "se2026-fieldwork-supervision",
+        date: "2026-05-18",
+        context: "Wilayah merah SE2026 Kabupaten Mojokerto membutuhkan percepatan supervisi.",
+        decision: "Prioritaskan supervisi lapangan pada wilayah merah dan tambah briefing harian untuk PML/PCL terkait.",
+        basis: "Progres wilayah merah masih tertinggal dari target mingguan dan ada risiko keterlambatan input.",
+        pic: "Koordinator SE2026",
+        deadline: "2026-05-21",
+        impact: "high",
+        status: "in-progress",
+        createdAt: getTodayISO(),
+        updatedAt: getTodayISO(),
+      },
+    ],
+    meetings: [
+      {
+        id: generateId("meeting"),
+        seedKey: "se2026-weekly-coordination",
+        date: "2026-05-18",
+        title: "Rapat Koordinasi Mingguan SE2026 Kabupaten Mojokerto",
+        agenda: "Evaluasi progres wilayah, kendala petugas, validasi awal, dan kebutuhan eskalasi pimpinan.",
+        participants: "Kepala Kantor, Koordinator SE2026, PML, perwakilan fungsi terkait",
+        decisions: "Fokus tindak lanjut pada wilayah merah dan dokumen yang menunggu review.",
+        pic: "Koordinator SE2026",
+        deadline: "2026-05-22",
+        followUp: "Kirim rekap wilayah merah\nSiapkan daftar usaha prioritas\nLaporkan kendala petugas harian",
+        pendingIssues: "Beberapa wilayah membutuhkan konfirmasi ulang target usaha.",
+        documentLink: "",
+        createdAt: getTodayISO(),
+        updatedAt: getTodayISO(),
+      },
+    ],
+  };
+}
+
+function setTodayInput(inputId) {
+  const input = $(inputId);
+  if (input && !input.value) {
+    input.value = new Date().toISOString().slice(0, 10);
   }
 }
 
@@ -629,6 +916,7 @@ function ensurePageStatuses() {
 
 function applyWorkspacePreferences(preferences = {}) {
   const pageZoom = Number(preferences.pageZoom) || 100;
+  document.body.dataset.workspaceMode = state?.templateId || "default";
   document.documentElement.style.setProperty("--page-zoom", `${pageZoom / 100}`);
   document.body.classList.toggle("compact-mode", Boolean(preferences.compactMode));
   document.body.classList.toggle("focus-cards", Boolean(preferences.focusCards));
@@ -836,9 +1124,56 @@ export function initAtlasRuntime() {
     $("seInternalDataPanel")?.scrollIntoView({ behavior: "smooth", block: "start" });
   });
 
+  $("landingPrimaryButton")?.addEventListener("click", () => {
+    enterWorkspace();
+  });
+
+  $("landingGuestButton")?.addEventListener("click", () => {
+    enterWorkspace();
+  });
+
+  $("landingGuestInlineButton")?.addEventListener("click", () => {
+    enterWorkspace();
+  });
+
+  $("landingLoginTab")?.addEventListener("click", () => {
+    setLandingAuthMode(false);
+  });
+
+  $("landingRegisterTab")?.addEventListener("click", () => {
+    setLandingAuthMode(true);
+  });
+
+  $("landingRegisterShortcut")?.addEventListener("click", () => {
+    setLandingAuthMode(true);
+    $("landingEmailInput")?.focus();
+  });
+
+  $("landingAuthForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    void submitLandingAuth();
+  });
+
+  $("decisionForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addDecision();
+  });
+
+  $("meetingForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addMeeting();
+  });
+
+  setTodayInput("decisionDateInput");
+  setTodayInput("meetingDateInput");
+  setLandingAuthMode(false);
+
   renderAll();
   if (!state.templateId) {
     openDialog("templateDialog");
+  }
+  if (shouldShowLanding()) {
+    showLanding();
   }
   registerServiceWorker();
   startReminderScheduler();
