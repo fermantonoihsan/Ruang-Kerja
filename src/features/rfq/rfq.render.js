@@ -30,6 +30,7 @@ export function renderRfqTracker({ pages, columns, onOpenPage, onMoveRfq }) {
                         <article class="kanban-card rfq-card" draggable="true" data-open-rfq="${page.id}" data-drag-rfq="${page.id}">
                           <strong>${sanitizeText(page.icon || "R")} ${sanitizeText(page.title)}</strong>
                           <p>${sanitizeText(getRfqSummary(page))}</p>
+                          <small>${(page.supplierBids || []).length} supplier bid(s)</small>
                           <div class="rfq-card-tags">
                             ${(page.tags || []).slice(0, 3).map((tag) => `<span>#${sanitizeText(tag)}</span>`).join("")}
                           </div>

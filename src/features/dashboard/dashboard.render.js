@@ -117,5 +117,12 @@ function getMetricValue(metricValue, pages, reminders) {
     return pages.filter((page) => page.rfqStatus === rfqStatus).length;
   }
 
+  if (metricValue.startsWith("bids:")) {
+    const bidMetric = metricValue.replace("bids:", "");
+    const bids = pages.flatMap((page) => page.supplierBids || []);
+    if (bidMetric === "any") return bids.length;
+    if (bidMetric === "vendors") return new Set(bids.map((bid) => bid.vendorName).filter(Boolean)).size;
+  }
+
   return 0;
 }

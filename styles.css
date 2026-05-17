@@ -221,6 +221,18 @@ label span {
   color: var(--ink);
 }
 
+.file-button {
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+.file-button input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
 .icon-button {
   width: 38px;
   height: 38px;
@@ -304,6 +316,10 @@ i[data-lucide="x"]::before {
 
 i[data-lucide="save"]::before {
   content: "✓";
+}
+
+i[data-lucide="upload"]::before {
+  content: "⇧";
 }
 
 .sidebar {

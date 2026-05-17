@@ -144,8 +144,8 @@ export const dashboardProfiles = {
     statusDescription: "Use the board to move items from RFQ and negotiation into review, PO, and delivery follow-up.",
     metrics: [
       { label: "RFQ Items", value: "rfq:any" },
-      { label: "Negotiation", value: "rfq:negotiation" },
-      { label: "Approval", value: "rfq:approval" },
+      { label: "Supplier Bids", value: "bids:any" },
+      { label: "Vendors", value: "bids:vendors" },
       { label: "PO Issued", value: "rfq:po-issued" },
     ],
     recentTitle: "Procurement Queue",

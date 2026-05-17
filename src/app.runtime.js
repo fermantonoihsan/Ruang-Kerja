@@ -23,6 +23,7 @@ import {
 } from "./services/cloud-sync.service.js";
 import { initFirebase } from "./services/firebase.service.js";
 import { registerServiceWorker } from "./services/pwa.service.js";
+import { importRfqCsvText } from "./services/rfq-import.service.js";
 import {
   getDueReminders,
   showReminderNotification,
@@ -91,10 +92,11 @@ function filteredPages() {
 }
 
 function setView(view) {
-  activeView = view;
+  const nextView = view === "rfq" && state?.templateId !== "procurement" ? "dashboard" : view;
+  activeView = nextView;
 
   document.querySelectorAll("[data-view]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.view === view);
+    button.classList.toggle("active", button.dataset.view === nextView);
   });
 
   [
@@ -104,7 +106,7 @@ function setView(view) {
     ["rfq", $("rfqView")],
     ["reminders", $("remindersView")],
   ].forEach(([name, node]) => {
-    if (node) node.classList.toggle("active", name === view);
+    if (node) node.classList.toggle("active", name === nextView);
   });
 }
 
@@ -190,6 +192,35 @@ function createRfqItem() {
   renderAll();
 }
 
+async function importRfqFile(file) {
+  if (!file) return;
+
+  const fileName = file.name || "";
+  const extension = fileName.split(".").pop()?.toLowerCase();
+
+  if (extension === "xlsx" || extension === "xls") {
+    window.alert("For now, please save your Excel sheet as CSV first, then upload the CSV file to Atlas.");
+    return;
+  }
+
+  const csvText = await file.text();
+  const result = importRfqCsvText(csvText, state);
+
+  if (!result.imported && !result.updated) {
+    window.alert("No RFQ data was imported. Please check the CSV headers and rows.");
+    return;
+  }
+
+  state.templateId = "procurement";
+  state.workspaceName = state.workspaceName || "Procurement Workspace";
+  saveState();
+  activeView = "rfq";
+  renderAll();
+  window.alert(
+    `RFQ import complete: ${result.imported} new RFQ item(s), ${result.updated} updated, ${result.bidRows} supplier bid row(s).`,
+  );
+}
+
 function openTemplateChooser() {
   closeDialog("settingsDialog");
   window.setTimeout(() => {
@@ -223,6 +254,7 @@ function renderAll() {
   const pages = filteredPages();
 
   applyWorkspacePreferences(state.preferences);
+  renderTemplateVisibility();
   setView(activeView);
   renderSidebar({ state, pages, onSelectPage: selectPage });
   renderDashboard({ state, filteredPages: pages, setView, renderAll });
@@ -232,6 +264,18 @@ function renderAll() {
   renderReminders({ pages });
   renderUser({ user: currentUser, syncStatus, guestName: state.displayName });
   refreshIcons();
+}
+
+function renderTemplateVisibility() {
+  const isProcurement = state.templateId === "procurement";
+
+  document.querySelectorAll("[data-procurement-only]").forEach((node) => {
+    node.hidden = !isProcurement;
+  });
+
+  if (!isProcurement && activeView === "rfq") {
+    activeView = "dashboard";
+  }
 }
 
 function ensureProcurementRfqStatuses() {
@@ -449,6 +493,12 @@ export function initAtlasRuntime() {
 
   $("newRfqButton")?.addEventListener("click", () => {
     createRfqItem();
+  });
+
+  $("rfqImportInput")?.addEventListener("change", async (event) => {
+    const file = event.target.files?.[0];
+    await importRfqFile(file);
+    event.target.value = "";
   });
 
   renderAll();

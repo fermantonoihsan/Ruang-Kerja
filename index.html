@@ -111,7 +111,7 @@
   <span>Kanban</span>
 </button>
 
-<button class="nav-item" data-view="rfq">
+<button class="nav-item" data-view="rfq" data-procurement-only>
   <img src="./assets/icons/kanban-square.svg" class="nav-icon" alt="" />
   <span>RFQ Tracker</span>
 </button>
@@ -299,6 +299,11 @@
               <i data-lucide="plus"></i>
               <span>RFQ Item</span>
             </button>
+            <label class="button button-light file-button">
+              <i data-lucide="upload"></i>
+              <span>Upload CSV</span>
+              <input id="rfqImportInput" type="file" accept=".csv,text/csv,.xlsx,.xls" />
+            </label>
           </div>
 
           <div class="rfq-radar">
