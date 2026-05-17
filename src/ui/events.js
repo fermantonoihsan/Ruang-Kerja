@@ -3,6 +3,29 @@ import { toggleTheme } from "./theme.js";
 
 const $ = (id) => document.getElementById(id);
 
+function openDialog(dialogId) {
+  const dialog = $(dialogId);
+  if (!dialog) return;
+
+  if (typeof dialog.showModal === "function") {
+    if (!dialog.open) dialog.showModal();
+    return;
+  }
+
+  dialog.setAttribute("open", "");
+}
+
+function closeDialog(dialog) {
+  if (!dialog) return;
+
+  if (typeof dialog.close === "function") {
+    dialog.close();
+    return;
+  }
+
+  dialog.removeAttribute("open");
+}
+
 export function bindEvents({
   state,
   getState,
@@ -53,9 +76,9 @@ export function bindEvents({
     onSearchChange?.(event.target.value.trim());
   });
 
-  $("heroNewPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
-  $("newPageButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
-  $("newCardButton")?.addEventListener("click", () => $("pageDialog")?.showModal());
+  $("heroNewPageButton")?.addEventListener("click", () => openDialog("pageDialog"));
+  $("newPageButton")?.addEventListener("click", () => openDialog("pageDialog"));
+  $("newCardButton")?.addEventListener("click", () => openDialog("pageDialog"));
 
   $("pageForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -172,7 +195,7 @@ export function bindEvents({
 
   document.querySelectorAll("[data-close-dialog]").forEach((button) => {
     button.addEventListener("click", () => {
-      button.closest("dialog")?.close();
+      closeDialog(button.closest("dialog"));
     });
   });
 
@@ -187,7 +210,7 @@ export function bindEvents({
     }
 
     setAuthMode(false);
-    $("authDialog")?.showModal();
+    openDialog("authDialog");
   });
 
   $("toggleAuthMode")?.addEventListener("click", () => {
@@ -212,7 +235,7 @@ export function bindEvents({
       }
 
       $("authForm")?.reset();
-      $("authDialog")?.close();
+      closeDialog($("authDialog"));
     } catch (error) {
       console.warn("[events] Auth request failed:", error);
       setSyncStatus?.("error");
@@ -223,7 +246,7 @@ export function bindEvents({
 
   $("settingsButton")?.addEventListener("click", () => {
     populateSettingsForm(getState?.() || state);
-    $("settingsDialog")?.showModal();
+    openDialog("settingsDialog");
   });
 
   $("settingsForm")?.addEventListener("submit", (event) => {
@@ -236,7 +259,7 @@ export function bindEvents({
 
     saveState();
     renderAll();
-    $("settingsDialog")?.close();
+    closeDialog($("settingsDialog"));
   });
 
   $("settingsPageZoom")?.addEventListener("input", () => {

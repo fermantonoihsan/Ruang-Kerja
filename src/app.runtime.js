@@ -4,6 +4,7 @@ import {
   getFirebaseConfig,
   saveFirebaseConfig,
 } from "./config/firebase.config.js";
+import { createWorkspaceFromTemplate } from "./config/templates.js";
 import { renderDashboard } from "./features/dashboard/dashboard.render.js";
 import { renderKanban } from "./features/kanban/kanban.render.js";
 import { renderEditor } from "./features/notes/notes.render.js";
@@ -39,6 +40,30 @@ import { renderUser } from "./ui/user.render.js";
 import { formatDate, generateId, getTodayISO, parseTags } from "./utils/helpers.js";
 
 const $ = (id) => document.getElementById(id);
+
+function openDialog(dialogId) {
+  const dialog = $(dialogId);
+  if (!dialog) return;
+
+  if (typeof dialog.showModal === "function") {
+    if (!dialog.open) dialog.showModal();
+    return;
+  }
+
+  dialog.setAttribute("open", "");
+}
+
+function closeDialog(dialogId) {
+  const dialog = $(dialogId);
+  if (!dialog) return;
+
+  if (typeof dialog.close === "function") {
+    dialog.close();
+    return;
+  }
+
+  dialog.removeAttribute("open");
+}
 
 let state = null;
 let activeView = "dashboard";
@@ -122,9 +147,36 @@ function createPage() {
   saveState();
 
   $("pageForm")?.reset();
-  $("pageDialog")?.close();
+  closeDialog("pageDialog");
 
   activeView = "notes";
+  renderAll();
+}
+
+function openTemplateChooser() {
+  closeDialog("settingsDialog");
+  window.setTimeout(() => {
+    openDialog("templateDialog");
+  }, 0);
+}
+
+function applyTemplate(templateId) {
+  const currentState = getState();
+  const hasExistingWorkspace = Boolean(currentState.templateId || (currentState.pages || []).length > 1);
+
+  if (hasExistingWorkspace) {
+    const shouldReplace = window.confirm(
+      "Changing template will replace your current workspace pages with the selected starter board. Continue?",
+    );
+
+    if (!shouldReplace) return;
+  }
+
+  const nextWorkspace = createWorkspaceFromTemplate(templateId);
+  replaceState(nextWorkspace);
+  state = getState();
+  closeDialog("templateDialog");
+  activeView = "dashboard";
   renderAll();
 }
 
@@ -313,7 +365,21 @@ export function initAtlasRuntime() {
       renderAll();
     },
   });
+
+  document.querySelectorAll("[data-template-choice]").forEach((button) => {
+    button.addEventListener("click", () => {
+      applyTemplate(button.dataset.templateChoice);
+    });
+  });
+
+  $("openTemplateChooser")?.addEventListener("click", () => {
+    openTemplateChooser();
+  });
+
   renderAll();
+  if (!state.templateId) {
+    openDialog("templateDialog");
+  }
   registerServiceWorker();
   startReminderScheduler();
 }

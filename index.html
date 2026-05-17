@@ -150,9 +150,9 @@
         <section class="workspace-view active" id="dashboardView" aria-label="Dashboard view">
   <div class="dashboard-hero">
     <div>
-      <span class="eyebrow">Atlas Workspace</span>
-      <h1>Organize work, ideas, and execution in one calm system.</h1>
-      <p>
+      <span class="eyebrow" id="dashboardEyebrow">Atlas Workspace</span>
+      <h1 id="dashboardHeroTitle">Organize work, ideas, and execution in one calm system.</h1>
+      <p id="dashboardHeroDescription">
         A local-first productivity workspace for structured notes, draggable Kanban planning, and reminders that keep daily execution clear.
       </p>
 
@@ -163,7 +163,7 @@
         </button>
       </div>
 
-      <div class="hero-service-row" aria-label="Workspace capabilities">
+      <div class="hero-service-row" id="dashboardCapabilities" aria-label="Workspace capabilities">
         <span>Notes</span>
         <span>Kanban</span>
         <span>Reminders</span>
@@ -172,9 +172,9 @@
     </div>
 
     <aside class="hero-side-card">
-      <span class="chip">Workspace Status</span>
-      <strong>Build your operating rhythm.</strong>
-      <small>
+      <span class="chip" id="dashboardStatusLabel">Workspace Status</span>
+      <strong id="dashboardStatusTitle">Build your operating rhythm.</strong>
+      <small id="dashboardStatusDescription">
         Start locally, then sign in when you need secure Firebase sync across devices.
       </small>
 
@@ -194,36 +194,36 @@
 
   <div class="dashboard-grid">
     <article class="stat-card">
-      <span>Total Pages</span>
-      <strong id="dashboardTotalPages">0</strong>
+      <span id="dashboardMetricLabel1">Total Pages</span>
+      <strong id="dashboardMetricValue1">0</strong>
     </article>
     <article class="stat-card">
-      <span>In Progress / Doing</span>
-      <strong id="dashboardDoingPages">0</strong>
+      <span id="dashboardMetricLabel2">In Progress</span>
+      <strong id="dashboardMetricValue2">0</strong>
     </article>
     <article class="stat-card">
-      <span>Review</span>
-      <strong id="dashboardReviewPages">0</strong>
+      <span id="dashboardMetricLabel3">Review</span>
+      <strong id="dashboardMetricValue3">0</strong>
     </article>
     <article class="stat-card">
-      <span>Active Reminders</span>
-      <strong id="dashboardReminderPages">0</strong>
+      <span id="dashboardMetricLabel4">Active Reminders</span>
+      <strong id="dashboardMetricValue4">0</strong>
     </article>
   </div>
 
   <div class="dashboard-panels">
     <section class="dashboard-panel">
       <div class="panel-header">
-        <h2>Recent Pages</h2>
-        <span>Last updated</span>
+        <h2 id="dashboardRecentTitle">Recent Pages</h2>
+        <span id="dashboardRecentSubtitle">Last updated</span>
       </div>
       <div id="dashboardRecentPages" class="dashboard-list"></div>
     </section>
 
     <section class="dashboard-panel">
       <div class="panel-header">
-        <h2>Due Soon</h2>
-        <span>Active reminders</span>
+        <h2 id="dashboardDueTitle">Due Soon</h2>
+        <span id="dashboardDueSubtitle">Active reminders</span>
       </div>
       <div id="dashboardDuePages" class="dashboard-list"></div>
     </section>
@@ -333,6 +333,40 @@
       </form>
     </dialog>
 
+    <dialog class="modal template-modal" id="templateDialog">
+      <div class="modal-card template-card">
+        <div class="modal-header">
+          <div>
+            <h2>Choose your workspace template</h2>
+            <span>Start with a setup that matches your daily work.</span>
+          </div>
+          <button class="icon-button" type="button" data-close-dialog aria-label="Close">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <div class="template-grid">
+          <button class="template-option" type="button" data-template-choice="procurement">
+            <span class="template-mark">P</span>
+            <strong>Procurement</strong>
+            <small>Vendor follow-up, RFQ, PO delivery, contracts, and procurement reminders.</small>
+          </button>
+
+          <button class="template-option" type="button" data-template-choice="staff">
+            <span class="template-mark">S</span>
+            <strong>Office Staff</strong>
+            <small>Daily tasks, meeting notes, document follow-up, and weekly reporting.</small>
+          </button>
+
+          <button class="template-option" type="button" data-template-choice="manager">
+            <span class="template-mark">M</span>
+            <strong>Manager</strong>
+            <small>Program monitoring, leadership notes, report review, and strategic issues.</small>
+          </button>
+        </div>
+      </div>
+    </dialog>
+
     <dialog class="modal" id="settingsDialog">
       <form class="modal-card" id="settingsForm">
         <div class="modal-header">
@@ -347,6 +381,14 @@
         <div class="settings-section">
           <h3>Profile</h3>
           <p>Personalize how this workspace appears on your device.</p>
+        </div>
+        <div class="settings-section">
+          <h3>Workspace Template</h3>
+          <p>Switch between Procurement, Office Staff, and Manager starter boards.</p>
+          <button class="button button-light" type="button" id="openTemplateChooser">
+            <i data-lucide="layout-dashboard"></i>
+            <span>Change Template</span>
+          </button>
         </div>
         <label>
           <span>Workspace name</span>

@@ -19,6 +19,7 @@ function createInitialState() {
   };
 
   return {
+    templateId: "",
     workspaceName: "My Workspace",
     displayName: "Guest",
     preferences: {

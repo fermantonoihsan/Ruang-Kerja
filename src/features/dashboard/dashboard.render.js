@@ -1,4 +1,5 @@
 import { formatDate, sanitizeText, sortByUpdatedAt } from "../../utils/helpers.js";
+import { dashboardProfiles } from "../../config/templates.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -8,11 +9,9 @@ export function renderDashboard({ state, filteredPages, setView, renderAll }) {
   const doing = pages.filter((page) => page.status === "doing");
   const review = pages.filter((page) => page.status === "review");
   const reminders = pages.filter((page) => page.reminderAt && !page.reminderDone);
+  const profile = dashboardProfiles[state.templateId] || dashboardProfiles.default;
 
-  if ($("dashboardTotalPages")) $("dashboardTotalPages").textContent = pages.length;
-  if ($("dashboardDoingPages")) $("dashboardDoingPages").textContent = doing.length;
-  if ($("dashboardReviewPages")) $("dashboardReviewPages").textContent = review.length;
-  if ($("dashboardReminderPages")) $("dashboardReminderPages").textContent = reminders.length;
+  renderDashboardProfile(profile, pages, reminders);
   if ($("heroPageCount")) $("heroPageCount").textContent = pages.length;
   if ($("heroReminderCount")) $("heroReminderCount").textContent = reminders.length;
 
@@ -66,4 +65,51 @@ export function renderDashboard({ state, filteredPages, setView, renderAll }) {
 
   void setView;
   void renderAll;
+}
+
+function renderDashboardProfile(profile, pages, reminders) {
+  if ($("dashboardEyebrow")) $("dashboardEyebrow").textContent = profile.eyebrow;
+  if ($("dashboardHeroTitle")) $("dashboardHeroTitle").textContent = profile.title;
+  if ($("dashboardHeroDescription")) $("dashboardHeroDescription").textContent = profile.description;
+  if ($("dashboardStatusLabel")) $("dashboardStatusLabel").textContent = profile.statusLabel;
+  if ($("dashboardStatusTitle")) $("dashboardStatusTitle").textContent = profile.statusTitle;
+  if ($("dashboardStatusDescription")) $("dashboardStatusDescription").textContent = profile.statusDescription;
+  if ($("dashboardRecentTitle")) $("dashboardRecentTitle").textContent = profile.recentTitle;
+  if ($("dashboardRecentSubtitle")) $("dashboardRecentSubtitle").textContent = profile.recentSubtitle;
+  if ($("dashboardDueTitle")) $("dashboardDueTitle").textContent = profile.dueTitle;
+  if ($("dashboardDueSubtitle")) $("dashboardDueSubtitle").textContent = profile.dueSubtitle;
+
+  if ($("dashboardCapabilities")) {
+    $("dashboardCapabilities").innerHTML = profile.capabilities
+      .map((capability) => `<span>${sanitizeText(capability)}</span>`)
+      .join("");
+  }
+
+  profile.metrics.forEach((metric, index) => {
+    const number = index + 1;
+    if ($(`dashboardMetricLabel${number}`)) {
+      $(`dashboardMetricLabel${number}`).textContent = metric.label;
+    }
+
+    if ($(`dashboardMetricValue${number}`)) {
+      $(`dashboardMetricValue${number}`).textContent = getMetricValue(metric.value, pages, reminders);
+    }
+  });
+}
+
+function getMetricValue(metricValue, pages, reminders) {
+  if (metricValue === "pages") return pages.length;
+  if (metricValue === "reminders") return reminders.length;
+
+  if (metricValue.startsWith("status:")) {
+    const status = metricValue.replace("status:", "");
+    return pages.filter((page) => page.status === status).length;
+  }
+
+  if (metricValue.startsWith("tag:")) {
+    const tag = metricValue.replace("tag:", "");
+    return pages.filter((page) => (page.tags || []).includes(tag)).length;
+  }
+
+  return 0;
 }
