@@ -36,7 +36,7 @@ import { bindEvents } from "./ui/events.js";
 import { renderSidebar } from "./ui/sidebar.render.js";
 import { initTheme } from "./ui/theme.js";
 import { renderUser } from "./ui/user.render.js";
-import { generateId, getTodayISO, parseTags } from "./utils/helpers.js";
+import { formatDate, generateId, getTodayISO, parseTags } from "./utils/helpers.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -91,6 +91,16 @@ function selectPage(pageId) {
   renderAll();
 }
 
+function movePageToStatus(pageId, status) {
+  const page = state.pages.find((item) => item.id === pageId);
+  if (!page || !columns.some((column) => column.id === status)) return;
+
+  page.status = status;
+  page.updatedAt = getTodayISO();
+  saveState();
+  renderAll();
+}
+
 function createPage() {
   const title = $("newPageTitle")?.value?.trim() || "Untitled";
 
@@ -122,14 +132,46 @@ function renderAll() {
   state = getState();
   const pages = filteredPages();
 
+  applyWorkspacePreferences(state.preferences);
   setView(activeView);
   renderSidebar({ state, pages, onSelectPage: selectPage });
   renderDashboard({ state, filteredPages: pages, setView, renderAll });
   renderEditor({ page: selectedPage() });
-  renderKanban({ pages, columns, onOpenPage: selectPage });
+  renderKanban({ pages, columns, onOpenPage: selectPage, onMovePage: movePageToStatus });
   renderReminders({ pages });
-  renderUser({ user: currentUser, syncStatus });
+  renderUser({ user: currentUser, syncStatus, guestName: state.displayName });
   refreshIcons();
+}
+
+function applyWorkspacePreferences(preferences = {}) {
+  const pageZoom = Number(preferences.pageZoom) || 100;
+  document.documentElement.style.setProperty("--page-zoom", `${pageZoom / 100}`);
+  document.body.classList.toggle("compact-mode", Boolean(preferences.compactMode));
+  document.body.classList.toggle("focus-cards", Boolean(preferences.focusCards));
+}
+
+let toastTimer = null;
+
+function showToast(message) {
+  const toast = $("toast");
+  if (!toast) return false;
+
+  clearTimeout(toastTimer);
+  toast.textContent = message;
+  toast.classList.add("show");
+
+  toastTimer = window.setTimeout(() => {
+    toast.classList.remove("show");
+  }, 7000);
+
+  return true;
+}
+
+function showReminderFallback(page) {
+  const title = page.title || "Reminder";
+  const dueTime = page.reminderAt ? ` Due: ${formatDate(page.reminderAt, "en-US")}.` : "";
+
+  return showToast(`Reminder: ${title}.${dueTime}`);
 }
 
 async function checkDueReminders() {
@@ -146,7 +188,8 @@ async function checkDueReminders() {
 
     for (const page of dueReminders) {
       const didNotify = await showReminderNotification(page);
-      if (!didNotify) continue;
+      const didAlert = didNotify || showReminderFallback(page);
+      if (!didAlert) continue;
 
       page.reminderDone = true;
       page.updatedAt = getTodayISO();
@@ -260,7 +303,10 @@ export function initAtlasRuntime() {
     onReminderPermissionChange(permission) {
       if (permission === "granted") {
         void checkDueReminders();
+        return;
       }
+
+      showToast("Browser notifications are not enabled. Atlas will show reminder alerts inside the app.");
     },
     onSearchChange(query) {
       searchQuery = query;

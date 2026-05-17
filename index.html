@@ -35,7 +35,7 @@
 
         <label class="search-box command-search">
           <i data-lucide="search"></i>
-          <input id="searchInput" type="search" placeholder="Search notes, tasks, tags..." autocomplete="off" />
+          <input id="searchInput" type="search" placeholder="Search workspace, tasks, notes..." autocomplete="off" />
           <kbd>Ctrl K</kbd>
         </label>
 
@@ -151,9 +151,9 @@
   <div class="dashboard-hero">
     <div>
       <span class="eyebrow">Atlas Workspace</span>
-      <h1>Your focused workspace for notes, tasks, and reminders.</h1>
+      <h1>Organize work, ideas, and execution in one calm system.</h1>
       <p>
-        Capture ideas, organize project flow, and stay on top of daily work in a fast local-first workspace.
+        A local-first productivity workspace for structured notes, draggable Kanban planning, and reminders that keep daily execution clear.
       </p>
 
       <div class="hero-actions">
@@ -162,13 +162,20 @@
           <span>New Page</span>
         </button>
       </div>
+
+      <div class="hero-service-row" aria-label="Workspace capabilities">
+        <span>Notes</span>
+        <span>Kanban</span>
+        <span>Reminders</span>
+        <span>Offline-first</span>
+      </div>
     </div>
 
     <aside class="hero-side-card">
       <span class="chip">Workspace Status</span>
-      <strong>Cloud sync ready</strong>
+      <strong>Build your operating rhythm.</strong>
       <small>
-        Login to sync this workspace with Firebase across devices.
+        Start locally, then sign in when you need secure Firebase sync across devices.
       </small>
 
       <div class="hero-metrics">
@@ -269,7 +276,7 @@
               <h1>Kanban</h1>
               <span id="kanbanMeta">0 cards</span>
             </div>
-            <button class="button" id="newCardButton">
+            <button class="button button-light" id="newCardButton">
               <i data-lucide="plus"></i>
               <span>Card</span>
             </button>
@@ -331,34 +338,47 @@
         <div class="modal-header">
           <div>
             <h2>Settings</h2>
-            <span>Manage workspace preferences and cloud sync.</span>
+            <span>Adjust your profile, workspace view, and page comfort.</span>
           </div>
           <button class="icon-button" type="button" data-close-dialog aria-label="Close">
             <i data-lucide="x"></i>
           </button>
         </div>
         <div class="settings-section">
-          <h3>Cloud Sync</h3>
-          <p>Cloud sync is available for multi-device workspace access after login.</p>
+          <h3>Profile</h3>
+          <p>Personalize how this workspace appears on your device.</p>
         </div>
         <label>
-          <span>API Key</span>
-          <input id="firebaseApiKey" type="password" placeholder="AIza..." />
+          <span>Workspace name</span>
+          <input id="settingsWorkspaceName" type="text" maxlength="40" placeholder="My Workspace" />
         </label>
         <label>
-          <span>Auth Domain</span>
-          <input id="firebaseAuthDomain" type="text" placeholder="project-id.firebaseapp.com" />
+          <span>Display name</span>
+          <input id="settingsDisplayName" type="text" maxlength="40" placeholder="Guest" />
         </label>
         <label>
-          <span>Project ID</span>
-          <input id="firebaseProjectId" type="text" placeholder="project-id" />
+          <span>Page zoom</span>
+          <input id="settingsPageZoom" type="range" min="90" max="115" step="5" />
+          <output id="settingsPageZoomValue">100%</output>
         </label>
-        <label>
-          <span>App ID</span>
-          <input id="firebaseAppId" type="text" placeholder="1:123:web:abc" />
-        </label>
+        <div class="settings-options" role="group" aria-label="Workspace display options">
+          <label class="toggle-row">
+            <span>
+              <strong>Compact layout</strong>
+              <small>Reduce spacing for denser boards and notes.</small>
+            </span>
+            <input id="settingsCompactMode" type="checkbox" />
+          </label>
+          <label class="toggle-row">
+            <span>
+              <strong>Focus cards</strong>
+              <small>Softer background and stronger card contrast.</small>
+            </span>
+            <input id="settingsFocusCards" type="checkbox" />
+          </label>
+        </div>
         <div class="modal-actions">
-          <button class="button button-quiet" type="button" id="clearCloudConfig">Use Local Workspace</button>
+          <button class="button button-quiet" type="button" id="resetViewPreferences">Reset View</button>
           <button class="button" type="submit">
             <i data-lucide="save"></i>
             <span>Save Settings</span>

@@ -16,10 +16,6 @@ export function bindEvents({
   signInWithEmail,
   signUpWithEmail,
   signOutUser,
-  getFirebaseConfig,
-  saveFirebaseConfig,
-  clearFirebaseConfig,
-  onFirebaseConfigChange,
   setSyncStatus,
   onReminderPermissionChange,
 }) {
@@ -226,28 +222,33 @@ export function bindEvents({
   });
 
   $("settingsButton")?.addEventListener("click", () => {
-    populateSettingsForm(getFirebaseConfig?.());
+    populateSettingsForm(getState?.() || state);
     $("settingsDialog")?.showModal();
   });
 
   $("settingsForm")?.addEventListener("submit", (event) => {
     event.preventDefault();
 
-    const config = saveFirebaseConfig?.({
-      apiKey: $("firebaseApiKey")?.value || "",
-      authDomain: $("firebaseAuthDomain")?.value || "",
-      projectId: $("firebaseProjectId")?.value || "",
-      appId: $("firebaseAppId")?.value || "",
-    });
+    const currentState = getState?.() || state;
+    currentState.workspaceName = $("settingsWorkspaceName")?.value?.trim() || "My Workspace";
+    currentState.displayName = $("settingsDisplayName")?.value?.trim() || "Guest";
+    currentState.preferences = readSettingsPreferences();
 
-    onFirebaseConfigChange?.(config);
+    saveState();
+    renderAll();
     $("settingsDialog")?.close();
   });
 
-  $("clearCloudConfig")?.addEventListener("click", () => {
-    const config = clearFirebaseConfig?.();
-    populateSettingsForm(config);
-    onFirebaseConfigChange?.(config);
+  $("settingsPageZoom")?.addEventListener("input", () => {
+    updateZoomOutput();
+  });
+
+  $("resetViewPreferences")?.addEventListener("click", () => {
+    const currentState = getState?.() || state;
+    currentState.preferences = defaultPreferences();
+    saveState();
+    populateSettingsForm(currentState);
+    renderAll();
   });
 
   function setAuthMode(nextIsRegisterMode) {
@@ -285,9 +286,38 @@ async function requestNotificationPermission() {
   }
 }
 
-function populateSettingsForm(config = {}) {
-  if ($("firebaseApiKey")) $("firebaseApiKey").value = config.apiKey || "";
-  if ($("firebaseAuthDomain")) $("firebaseAuthDomain").value = config.authDomain || "";
-  if ($("firebaseProjectId")) $("firebaseProjectId").value = config.projectId || "";
-  if ($("firebaseAppId")) $("firebaseAppId").value = config.appId || "";
+function defaultPreferences() {
+  return {
+    pageZoom: 100,
+    compactMode: false,
+    focusCards: false,
+  };
+}
+
+function readSettingsPreferences() {
+  return {
+    pageZoom: Number($("settingsPageZoom")?.value) || 100,
+    compactMode: Boolean($("settingsCompactMode")?.checked),
+    focusCards: Boolean($("settingsFocusCards")?.checked),
+  };
+}
+
+function populateSettingsForm(state = {}) {
+  const preferences = {
+    ...defaultPreferences(),
+    ...(state.preferences || {}),
+  };
+
+  if ($("settingsWorkspaceName")) $("settingsWorkspaceName").value = state.workspaceName || "My Workspace";
+  if ($("settingsDisplayName")) $("settingsDisplayName").value = state.displayName || "Guest";
+  if ($("settingsPageZoom")) $("settingsPageZoom").value = preferences.pageZoom;
+  if ($("settingsCompactMode")) $("settingsCompactMode").checked = Boolean(preferences.compactMode);
+  if ($("settingsFocusCards")) $("settingsFocusCards").checked = Boolean(preferences.focusCards);
+  updateZoomOutput();
+}
+
+function updateZoomOutput() {
+  if ($("settingsPageZoomValue")) {
+    $("settingsPageZoomValue").textContent = `${$("settingsPageZoom")?.value || 100}%`;
+  }
 }

@@ -20,15 +20,16 @@ const statusClasses = [
   "connecting",
 ];
 
-export function renderUser({ user = null, syncStatus = "local" } = {}) {
+export function renderUser({ user = null, syncStatus = "local", guestName = "Guest" } = {}) {
   const displayName = user?.displayName || user?.email || "User";
   const email = user?.email || "Cloud workspace";
   const avatar = (displayName || email || "G").trim().slice(0, 1).toUpperCase() || "G";
+  const localName = guestName || "Guest";
   const normalizedStatus = statusLabels[syncStatus] ? syncStatus : "local";
 
-  if ($("userName")) $("userName").textContent = user ? displayName : "Guest";
+  if ($("userName")) $("userName").textContent = user ? displayName : localName;
   if ($("userEmail")) $("userEmail").textContent = user ? email : "Offline-first workspace";
-  if ($("userAvatar")) $("userAvatar").textContent = user ? avatar : "G";
+  if ($("userAvatar")) $("userAvatar").textContent = user ? avatar : localName.trim().slice(0, 1).toUpperCase() || "G";
 
   if ($("authButton")) {
     const label = $("authButton").querySelector("span");

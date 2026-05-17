@@ -32,4 +32,5 @@ export function renderSidebar({ state, pages, onSelectPage }) {
       ? tags.map((tag) => `<span class="chip">#${sanitizeText(tag)}</span>`).join("")
       : `<span class="muted">No tags yet</span>`;
   }
+
 }

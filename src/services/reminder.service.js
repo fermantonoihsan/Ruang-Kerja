@@ -76,7 +76,11 @@ export async function showReminderNotification(page) {
     }
   }
 
-  new Notification(title, options);
-
-  return true;
+  try {
+    new Notification(title, options);
+    return true;
+  } catch (error) {
+    console.warn("[reminder.service] Browser notification failed:", error);
+    return false;
+  }
 }

@@ -20,6 +20,12 @@ function createInitialState() {
 
   return {
     workspaceName: "My Workspace",
+    displayName: "Guest",
+    preferences: {
+      pageZoom: 100,
+      compactMode: false,
+      focusCards: false,
+    },
     selectedPageId: firstPage.id,
     pages: [firstPage],
     updatedAt: getTodayISO(),
