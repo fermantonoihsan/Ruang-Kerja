@@ -133,6 +133,13 @@ function showLanding() {
   document.body.classList.add("landing-active");
 }
 
+function exitGuestToLanding() {
+  window.sessionStorage.removeItem("atlas_landing_seen");
+  setLandingAuthMode(false);
+  showLanding();
+  refreshIcons();
+}
+
 function enterWorkspace() {
   document.body.classList.remove("landing-active");
   window.sessionStorage.setItem("atlas_landing_seen", "true");
@@ -1134,6 +1141,10 @@ export function initAtlasRuntime() {
 
   $("landingGuestInlineButton")?.addEventListener("click", () => {
     enterWorkspace();
+  });
+
+  $("guestLandingButton")?.addEventListener("click", () => {
+    exitGuestToLanding();
   });
 
   $("landingLoginTab")?.addEventListener("click", () => {

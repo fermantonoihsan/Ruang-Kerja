@@ -36,6 +36,10 @@ export function renderUser({ user = null, syncStatus = "local", guestName = "Gue
     if (label) label.textContent = user ? "Logout" : "Login";
   }
 
+  if ($("guestLandingButton")) {
+    $("guestLandingButton").hidden = Boolean(user);
+  }
+
   if ($("syncStatusBadge")) {
     $("syncStatusBadge").textContent = statusLabels[normalizedStatus];
     $("syncStatusBadge").classList.remove(...statusClasses);
