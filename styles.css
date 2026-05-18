@@ -1016,8 +1016,23 @@ i[data-lucide="upload"]::before {
 #notesView.active {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(340px, 0.82fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 18px;
   align-items: stretch;
+  position: relative;
+}
+
+#notesView.active[data-editor-layout="edit"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#notesView.active[data-editor-layout="preview"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+#notesView[data-editor-layout="edit"] .preview-panel,
+#notesView[data-editor-layout="preview"] .editor-panel {
+  display: none;
 }
 
 .editor-panel,
@@ -1032,7 +1047,7 @@ i[data-lucide="upload"]::before {
 
 .editor-panel {
   display: grid;
-  grid-template-rows: auto auto auto auto minmax(360px, 1fr);
+  grid-template-rows: auto minmax(480px, 1fr);
   padding: 16px;
 }
 
@@ -1048,6 +1063,55 @@ i[data-lucide="upload"]::before {
 
 .page-toolbar {
   margin-bottom: 10px;
+}
+
+.notes-toolbar {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.page-toolbar-actions,
+.editor-layout-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.editor-layout-toggle {
+  min-height: 40px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+
+.editor-layout-toggle button {
+  min-height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.editor-layout-toggle button.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.editor-layout-toggle button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .page-toolbar select,
@@ -1070,6 +1134,51 @@ i[data-lucide="upload"]::before {
 
 .page-toolbar select {
   max-width: 170px;
+}
+
+.page-detail-drawer {
+  position: absolute;
+  inset: 18px 18px 18px auto;
+  z-index: 12;
+  display: grid;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  gap: 14px;
+  width: min(420px, calc(100% - 36px));
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  box-shadow: 0 24px 70px rgba(18, 32, 52, 0.22);
+  overflow: auto;
+  transform: translateX(calc(100% + 26px));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 180ms ease;
+}
+
+#notesView.details-open .page-detail-drawer {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.page-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.page-detail-header h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+}
+
+.page-detail-header span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .title-input {
@@ -1121,6 +1230,7 @@ i[data-lucide="upload"]::before {
 .inline-entry,
 .link-entry {
   display: grid;
+  min-width: 0;
   gap: 8px;
 }
 
@@ -1164,11 +1274,12 @@ i[data-lucide="upload"]::before {
 }
 
 .link-entry {
-  grid-template-columns: minmax(130px, 0.8fr) minmax(140px, 1fr) minmax(180px, 1.2fr) auto;
+  grid-template-columns: 1fr;
 }
 
 .link-entry .button {
-  min-width: 76px;
+  width: 100%;
+  min-width: 0;
   white-space: nowrap;
 }
 
@@ -1208,12 +1319,6 @@ i[data-lucide="upload"]::before {
   gap: 6px;
 }
 
-@media (min-width: 1440px) {
-  .page-planning-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  }
-}
-
 label {
   display: grid;
   gap: 6px;
@@ -1225,7 +1330,7 @@ textarea {
   width: 100%;
   min-height: 360px;
   resize: none;
-  margin-top: 14px;
+  margin-top: 0;
   border: 0;
   outline: 0;
   background: transparent;
@@ -1508,6 +1613,20 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .page-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+
+  .editor-layout-toggle {
+    order: 3;
+    width: 100%;
+  }
+
+  .editor-layout-toggle button {
+    flex: 1;
+  }
+
   .kanban-board {
     grid-template-columns: repeat(2, minmax(240px, 1fr));
   }
@@ -1562,6 +1681,17 @@ textarea {
 
   .workspace-view {
     padding: 12px;
+  }
+
+  .page-detail-drawer {
+    position: fixed;
+    inset: 76px 12px 12px;
+    width: auto;
+    transform: translateY(18px);
+  }
+
+  #notesView.details-open .page-detail-drawer {
+    transform: translateY(0);
   }
 
   .meta-grid {
@@ -3017,6 +3147,25 @@ body {
     radial-gradient(circle at 28% 24%, rgba(255, 255, 255, 0.7), transparent 26%),
     linear-gradient(135deg, #111213 0%, var(--accent) 46%, var(--blue) 100%);
   box-shadow: 0 14px 34px var(--mode-shadow);
+}
+
+.brand-mark-logo {
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(18, 43, 94, 0.14);
+}
+
+.brand-mark-logo::before,
+.brand-mark-logo::after {
+  content: none;
+}
+
+.brand-mark-logo img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  display: block;
 }
 
 .avatar {

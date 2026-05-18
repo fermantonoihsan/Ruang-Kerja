@@ -9,7 +9,8 @@
       content="Atlas Workspace is a calm, local-first productivity workspace for notes, Kanban planning, reminders, and structured thinking."
     />
     <title>Atlas Workspace</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/assets/brand/atlas-workspace-logo.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/assets/brand/atlas-workspace-logo.png" />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="stylesheet" href="styles.css" />
     <script defer src="https://www.gstatic.com/firebasejs/10.13.1/firebase-app-compat.js"></script>
@@ -23,8 +24,8 @@
     <section class="landing-page" id="landingPage" aria-label="Atlas Workspace landing page">
       <header class="landing-nav">
         <div class="landing-brand">
-          <span class="brand-mark" aria-hidden="true">
-            <span class="brand-glyph">A</span>
+          <span class="brand-mark brand-mark-logo" aria-hidden="true">
+            <img src="/assets/brand/atlas-workspace-logo.png" alt="" />
           </span>
           <div>
             <strong>Atlas Workspace</strong>
@@ -139,8 +140,8 @@
         </button>
 
         <div class="brand">
-          <span class="brand-mark" aria-hidden="true">
-            <span class="brand-glyph">A</span>
+          <span class="brand-mark brand-mark-logo" aria-hidden="true">
+            <img src="/assets/brand/atlas-workspace-logo.png" alt="" />
           </span>
           <div>
             <strong>Atlas Workspace</strong>
@@ -542,24 +543,60 @@
             </section>
           </div>
         </section>
-        <section class="workspace-view" id="notesView" aria-label="Pages view">
-          <section class="editor-panel">
-            <div class="page-toolbar">
+        <section class="workspace-view" id="notesView" data-editor-layout="edit" aria-label="Pages view">
+          <div class="page-toolbar notes-toolbar">
+            <div class="page-toolbar-actions">
               <button class="icon-button" id="deletePageButton" title="Delete page" aria-label="Delete page">
                 <i data-lucide="trash-2"></i>
               </button>
               <button class="icon-button" id="duplicatePageButton" title="Duplicate page" aria-label="Duplicate page">
                 <i data-lucide="copy"></i>
               </button>
-              <select id="statusSelect" aria-label="Page status"></select>
             </div>
+            <div class="editor-layout-toggle" role="group" aria-label="Editor layout mode">
+              <button class="active" type="button" data-editor-layout="edit">Edit</button>
+              <button type="button" data-editor-layout="preview">Preview</button>
+              <button type="button" data-editor-layout="split">Split</button>
+            </div>
+            <button class="button button-light" id="pageDetailsButton" type="button">
+              <i data-lucide="sliders-horizontal"></i>
+              <span>Page Details</span>
+            </button>
+          </div>
 
+          <section class="editor-panel">
             <input class="title-input" id="titleInput" type="text" placeholder="Untitled" />
+
+            <textarea id="markdownInput" spellcheck="true" placeholder="# Start writing..."></textarea>
+          </section>
+
+          <section class="preview-panel">
+            <div class="preview-header">
+              <span>Preview</span>
+              <div class="chip-row" id="previewTags"></div>
+            </div>
+            <article class="markdown-preview" id="markdownPreview"></article>
+          </section>
+
+          <aside class="page-detail-drawer" id="pageDetailDrawer" aria-label="Page Details">
+            <div class="page-detail-header">
+              <div>
+                <h2>Page Details</h2>
+                <span>Priority, dates, checklist, links, and tags</span>
+              </div>
+              <button class="icon-button" id="closePageDetailsButton" type="button" aria-label="Close page details">
+                <i data-lucide="x"></i>
+              </button>
+            </div>
 
             <div class="meta-grid">
               <label>
                 <span>Icon</span>
                 <input id="iconInput" type="text" maxlength="2" placeholder="*" />
+              </label>
+              <label>
+                <span>Status</span>
+                <select id="statusSelect" aria-label="Page status"></select>
               </label>
               <label>
                 <span>Tags</span>
@@ -623,17 +660,7 @@
                 </div>
               </section>
             </div>
-
-            <textarea id="markdownInput" spellcheck="true" placeholder="# Start writing..."></textarea>
-          </section>
-
-          <section class="preview-panel">
-            <div class="preview-header">
-              <span>Preview</span>
-              <div class="chip-row" id="previewTags"></div>
-            </div>
-            <article class="markdown-preview" id="markdownPreview"></article>
-          </section>
+          </aside>
         </section>
 
         <section class="workspace-view" id="se2026View" aria-label="SE2026 executive dashboard">

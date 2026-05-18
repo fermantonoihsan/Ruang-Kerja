@@ -48,6 +48,25 @@ export function bindEvents({
     $("sidebar")?.classList.toggle("open");
   });
 
+  document.querySelectorAll("[data-editor-layout]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const layout = button.dataset.editorLayout || "edit";
+      const notesView = $("notesView");
+      if (notesView) notesView.dataset.editorLayout = layout;
+      document.querySelectorAll("[data-editor-layout]").forEach((item) => {
+        item.classList.toggle("active", item === button);
+      });
+    });
+  });
+
+  $("pageDetailsButton")?.addEventListener("click", () => {
+    $("notesView")?.classList.add("details-open");
+  });
+
+  $("closePageDetailsButton")?.addEventListener("click", () => {
+    $("notesView")?.classList.remove("details-open");
+  });
+
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.addEventListener("click", () => {
       setView(button.dataset.view);
