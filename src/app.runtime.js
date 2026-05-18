@@ -22,6 +22,14 @@ import {
   renderSe2026ExecutiveDashboard,
 } from "./features/se2026/se2026.render.js";
 import {
+  getProcurementReminderLabel,
+  procurementNoteTemplates,
+  renderProcurementDashboard,
+  renderProcurementReminders,
+  renderProcurementTemplates,
+  renderVendorTracker,
+} from "./features/procurement/procurement.render.js";
+import {
   getCurrentUser,
   onAuthStateChanged,
   signInWithEmail,
@@ -106,6 +114,10 @@ function filteredPages() {
 function setView(view) {
   let nextView = view;
   if (view === "rfq" && state?.templateId !== "procurement") nextView = "dashboard";
+  if (view === "procurement-dashboard" && state?.templateId !== "procurement") nextView = "dashboard";
+  if (view === "vendor-tracker" && state?.templateId !== "procurement") nextView = "dashboard";
+  if (view === "procurement-reminders" && state?.templateId !== "procurement") nextView = "dashboard";
+  if (view === "procurement-templates" && state?.templateId !== "procurement") nextView = "dashboard";
   if (view === "se2026" && state?.templateId !== "bps-manager") nextView = "dashboard";
   if (view === "decisions" && state?.templateId !== "bps-manager") nextView = "dashboard";
   if (view === "meetings" && state?.templateId !== "bps-manager") nextView = "dashboard";
@@ -117,12 +129,16 @@ function setView(view) {
 
   [
     ["dashboard", $("dashboardView")],
+    ["procurement-dashboard", $("procurementDashboardView")],
+    ["vendor-tracker", $("vendorTrackerView")],
     ["notes", $("notesView")],
     ["se2026", $("se2026View")],
     ["decisions", $("decisionsView")],
     ["meetings", $("meetingsView")],
     ["kanban", $("kanbanView")],
     ["rfq", $("rfqView")],
+    ["procurement-reminders", $("procurementRemindersView")],
+    ["procurement-templates", $("procurementTemplatesView")],
     ["reminders", $("remindersView")],
   ].forEach(([name, node]) => {
     if (node) node.classList.toggle("active", name === nextView);
@@ -276,6 +292,142 @@ function createRfqItem() {
   renderAll();
 }
 
+function createVendorFollowUp() {
+  const now = getTodayISO();
+  const vendorName = $("vendorNameInput")?.value?.trim() || "New Vendor";
+  const pic = $("vendorPicInput")?.value?.trim() || "";
+  const contact = $("vendorContactInput")?.value?.trim() || "";
+  const offerStatus = $("vendorOfferStatusInput")?.value || "quotation";
+  const docsPending = $("vendorDocsInput")?.value?.trim() || "";
+  const negotiationNotes = $("vendorNegotiationInput")?.value?.trim() || "";
+  const category = $("vendorCategoryInput")?.value || "service";
+  const followUpDate = $("vendorFollowUpDateInput")?.value || "";
+  const reminderAt = followUpDate ? `${followUpDate}T09:00` : "";
+
+  const page = {
+    id: generateId("page"),
+    title: `Vendor Follow-up - ${vendorName}`,
+    icon: "V",
+    status: offerStatus === "delivered" ? "done" : offerStatus === "negotiation" ? "review" : "doing",
+    rfqStatus: normalizeProcurementStage(offerStatus),
+    vendorFollowUp: {
+      vendorName,
+      pic,
+      contact,
+      offerStatus,
+      docsPending,
+      negotiationNotes,
+    },
+    tags: uniqueTags([
+      "procurement",
+      "vendor-follow-up",
+      "vendor-evaluation",
+      category,
+      vendorName.toLowerCase().replace(/\s+/g, "-"),
+    ]),
+    markdown: `# Vendor Follow-up - ${vendorName}
+
+## Vendor Profile
+- PIC: ${pic || "-"}
+- Nomor kontak: ${contact || "-"}
+- Status penawaran: ${offerStatus}
+- Category: ${category}
+
+## Dokumen Pending
+${docsPending || "-"}
+
+## Catatan Negosiasi
+${negotiationNotes || "-"}
+
+## Next Follow-up
+- Reminder: ${reminderAt || "-"}`,
+    reminderAt,
+    reminderDone: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+  $("vendorFollowUpForm")?.reset();
+  activeView = "vendor-tracker";
+  renderAll();
+}
+
+function createProcurementReminder() {
+  const now = getTodayISO();
+  const type = $("procurementReminderTypeInput")?.value || "quotation-deadline";
+  const title = $("procurementReminderTitleInput")?.value?.trim() || getProcurementReminderLabel(type);
+  const owner = $("procurementReminderOwnerInput")?.value?.trim() || "";
+  const dueDate = $("procurementReminderDueInput")?.value || "";
+  const category = $("procurementReminderCategoryInput")?.value || "urgent";
+  const notes = $("procurementReminderNotesInput")?.value?.trim() || "";
+  const rfqStatus = type === "delivery-schedule" ? "po-issued" : type === "quotation-deadline" ? "quotation" : "negotiation";
+
+  const page = {
+    id: generateId("page"),
+    title,
+    icon: "D",
+    status: type === "delivery-schedule" ? "doing" : "review",
+    rfqStatus,
+    tags: uniqueTags(["procurement", "procurement-reminder", type, category]),
+    markdown: `# ${title}
+
+## Reminder
+- Type: ${getProcurementReminderLabel(type)}
+- Owner / PIC: ${owner || "-"}
+- Due date: ${dueDate || "-"}
+- Category: ${category}
+
+## Notes
+${notes || "-"}
+
+## Checklist
+- [ ] Confirm latest status
+- [ ] Follow up responsible PIC/vendor
+- [ ] Update document evidence
+- [ ] Close reminder when completed`,
+    reminderAt: dueDate ? `${dueDate}T09:00` : "",
+    reminderDone: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+  $("procurementReminderForm")?.reset();
+  activeView = "procurement-reminders";
+  renderAll();
+}
+
+function createProcurementNoteFromTemplate(templateId) {
+  const template = procurementNoteTemplates.find((item) => item.id === templateId);
+  if (!template) return;
+
+  const now = getTodayISO();
+  const page = {
+    id: generateId("page"),
+    title: template.title,
+    icon: template.icon,
+    status: "ideas",
+    rfqStatus: template.rfqStatus || "",
+    tags: uniqueTags(template.tags),
+    markdown: template.markdown,
+    reminderAt: "",
+    reminderDone: false,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  state.pages.push(page);
+  state.selectedPageId = page.id;
+  saveState();
+  activeView = "notes";
+  renderAll();
+}
+
 async function importRfqFile(file) {
   if (!file) return;
 
@@ -406,6 +558,27 @@ function csvCell(value) {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
+function normalizeProcurementStage(value) {
+  const stage = String(value || "").trim().toLowerCase();
+  const aliases = {
+    request: "request",
+    "rfq-sent": "quotation",
+    "quotation-received": "quotation",
+    quotation: "quotation",
+    quote: "quotation",
+    negotiation: "negotiation",
+    approval: "negotiation",
+    "po-issued": "po-issued",
+    delivered: "delivered",
+  };
+
+  return aliases[stage] || "request";
+}
+
+function uniqueTags(tags = []) {
+  return [...new Set(tags.map((tag) => String(tag || "").trim()).filter(Boolean))];
+}
+
 function applyTemplate(templateId) {
   const currentState = getState();
   if (currentState.templateId === templateId) return;
@@ -443,6 +616,10 @@ function renderAll() {
   setView(activeView);
   renderSidebar({ state, pages, onSelectPage: selectPage });
   renderDashboard({ state, filteredPages: pages, setView, renderAll });
+  renderProcurementDashboard({ state, onOpenPage: selectPage });
+  renderVendorTracker({ state, onOpenPage: selectPage });
+  renderProcurementReminders({ state, onOpenPage: selectPage });
+  renderProcurementTemplates({ onCreateTemplate: createProcurementNoteFromTemplate });
   renderSe2026ExecutiveDashboard({
     state,
     onRemovePublicUpdate: removeSe2026PublicUpdate,
@@ -486,7 +663,10 @@ function renderTemplateVisibility() {
     node.style.display = isBpsManager ? "" : "none";
   });
 
-  if (!isProcurement && activeView === "rfq") {
+  if (
+    !isProcurement &&
+    ["rfq", "procurement-dashboard", "vendor-tracker", "procurement-reminders", "procurement-templates"].includes(activeView)
+  ) {
     activeView = "dashboard";
   }
 
@@ -876,7 +1056,14 @@ function ensureProcurementRfqStatuses() {
   let didPatch = false;
 
   (state.pages || []).forEach((page) => {
-    if (page.rfqStatus) return;
+    if (page.rfqStatus) {
+      const normalizedStatus = normalizeProcurementStage(page.rfqStatus);
+      if (page.rfqStatus !== normalizedStatus) {
+        page.rfqStatus = normalizedStatus;
+        didPatch = true;
+      }
+      return;
+    }
 
     const tags = page.tags || [];
     const title = (page.title || "").toLowerCase();
@@ -886,7 +1073,7 @@ function ensureProcurementRfqStatuses() {
     } else if (tags.includes("vendor") || tags.includes("evaluation")) {
       page.rfqStatus = "negotiation";
     } else if (tags.includes("rfq") || title.includes("rfq")) {
-      page.rfqStatus = "quotation-received";
+      page.rfqStatus = "quotation";
     } else if (tags.includes("contract")) {
       page.rfqStatus = "request";
     }
@@ -1112,6 +1299,16 @@ export function initAtlasRuntime() {
 
   $("downloadRfqTemplate")?.addEventListener("click", () => {
     downloadRfqTemplate();
+  });
+
+  $("vendorFollowUpForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    createVendorFollowUp();
+  });
+
+  $("procurementReminderForm")?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    createProcurementReminder();
   });
 
   $("seInternalDataForm")?.addEventListener("submit", (event) => {

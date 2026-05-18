@@ -26,13 +26,13 @@ const columnAliases = {
 
 const rfqStatusMap = {
   request: "request",
-  "rfq sent": "rfq-sent",
-  sent: "rfq-sent",
-  "quotation received": "quotation-received",
-  quotation: "quotation-received",
-  quote: "quotation-received",
+  "rfq sent": "quotation",
+  sent: "quotation",
+  "quotation received": "quotation",
+  quotation: "quotation",
+  quote: "quotation",
   negotiation: "negotiation",
-  approval: "approval",
+  approval: "negotiation",
   "po issued": "po-issued",
   po: "po-issued",
   delivered: "delivered",
@@ -66,7 +66,7 @@ export function importRfqCsvText(csvText, currentState) {
     if (existingPage) {
       existingPage.title = title;
       existingPage.icon = "R";
-      existingPage.status = rfqStatus === "delivered" ? "done" : rfqStatus === "approval" ? "review" : "doing";
+      existingPage.status = rfqStatus === "delivered" ? "done" : rfqStatus === "negotiation" ? "review" : "doing";
       existingPage.rfqStatus = rfqStatus;
       existingPage.supplierBids = bids;
       existingPage.markdown = markdown;
@@ -80,7 +80,7 @@ export function importRfqCsvText(csvText, currentState) {
       id: generateId("page"),
       title,
       icon: "R",
-      status: rfqStatus === "delivered" ? "done" : rfqStatus === "approval" ? "review" : "doing",
+      status: rfqStatus === "delivered" ? "done" : rfqStatus === "negotiation" ? "review" : "doing",
       rfqStatus,
       rfqNumber,
       supplierBids: bids,
@@ -223,9 +223,9 @@ function normalizeRfqStatus(value) {
 }
 
 function inferRfqStatus(bids) {
-  if (bids.some((bid) => /recommend|approval/i.test(`${bid.recommendation} ${bid.bidStatus}`))) return "approval";
+  if (bids.some((bid) => /recommend|approval/i.test(`${bid.recommendation} ${bid.bidStatus}`))) return "negotiation";
   if (bids.some((bid) => /negotiation|clarification/i.test(`${bid.bidStatus} ${bid.technicalCompliance}`))) return "negotiation";
-  if (bids.some((bid) => bid.vendorName || bid.totalPrice || bid.unitPrice)) return "quotation-received";
+  if (bids.some((bid) => bid.vendorName || bid.totalPrice || bid.unitPrice)) return "quotation";
   return "request";
 }
 

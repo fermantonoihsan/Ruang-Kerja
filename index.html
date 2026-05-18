@@ -238,9 +238,29 @@
   <span>Kanban</span>
 </button>
 
+<button class="nav-item" data-view="procurement-dashboard" data-procurement-only>
+  <i data-lucide="activity"></i>
+  <span>Procurement Daily</span>
+</button>
+
+<button class="nav-item" data-view="vendor-tracker" data-procurement-only>
+  <i data-lucide="users"></i>
+  <span>Vendor Follow-up</span>
+</button>
+
 <button class="nav-item" data-view="rfq" data-procurement-only>
   <img src="./assets/icons/kanban-square.svg" class="nav-icon" alt="" />
-  <span>RFQ Tracker</span>
+  <span>PR/PO Board</span>
+</button>
+
+<button class="nav-item" data-view="procurement-reminders" data-procurement-only>
+  <img src="./assets/icons/alarm-clock.svg" class="nav-icon" alt="" />
+  <span>Procurement Reminders</span>
+</button>
+
+<button class="nav-item" data-view="procurement-templates" data-procurement-only>
+  <i data-lucide="notebook-tabs"></i>
+  <span>Procurement Templates</span>
 </button>
 
 <button class="nav-item" data-view="se2026" data-bps-manager-only>
@@ -376,6 +396,147 @@
     </section>
   </div>
 </section>
+
+        <section class="workspace-view" id="procurementDashboardView" aria-label="Daily procurement dashboard">
+          <div class="procurement-header">
+            <div>
+              <span class="eyebrow">Daily Procurement Dashboard</span>
+              <h1>Monitor PO, quotation, vendor follow-up, and urgent procurement items.</h1>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="stat-card">
+              <span>PO pending</span>
+              <strong id="procurementMetricPoPending">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Quotation due soon</span>
+              <strong id="procurementMetricQuotationDue">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Vendor follow-up today</span>
+              <strong id="procurementMetricVendorToday">0</strong>
+            </article>
+            <article class="stat-card">
+              <span>Urgent items</span>
+              <strong id="procurementMetricUrgent">0</strong>
+            </article>
+          </div>
+
+          <div class="dashboard-panels procurement-dashboard-panels">
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>PO Pending</h2>
+                <span>PO issued, waiting delivery</span>
+              </div>
+              <div class="dashboard-list" id="procurementPoPendingList"></div>
+            </section>
+
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Quotation Due Soon</h2>
+                <span>Deadline quotation and RFQ follow-up</span>
+              </div>
+              <div class="dashboard-list" id="procurementQuotationDueList"></div>
+            </section>
+
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Vendor Follow-up Today</h2>
+                <span>Vendor actions scheduled today</span>
+              </div>
+              <div class="dashboard-list" id="procurementVendorTodayList"></div>
+            </section>
+
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Urgent Items</h2>
+                <span>Tagged urgent</span>
+              </div>
+              <div class="dashboard-list" id="procurementUrgentList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="workspace-view" id="vendorTrackerView" aria-label="Vendor follow-up tracker">
+          <div class="procurement-header">
+            <div>
+              <span class="eyebrow">Vendor Follow-up Tracker</span>
+              <h1>Track every vendor PIC, contact, offer status, pending documents, and negotiation notes.</h1>
+              <p id="vendorTrackerMeta">0 vendors</p>
+            </div>
+          </div>
+
+          <div class="procurement-layout">
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Add Vendor Follow-up</h2>
+                <span>Create one page per vendor</span>
+              </div>
+              <form class="procurement-form" id="vendorFollowUpForm">
+                <label>
+                  <span>Vendor</span>
+                  <input id="vendorNameInput" type="text" placeholder="Vendor A" required />
+                </label>
+                <label>
+                  <span>PIC</span>
+                  <input id="vendorPicInput" type="text" placeholder="Nama PIC" />
+                </label>
+                <label>
+                  <span>Nomor kontak</span>
+                  <input id="vendorContactInput" type="text" placeholder="+62..." />
+                </label>
+                <label>
+                  <span>Status penawaran</span>
+                  <select id="vendorOfferStatusInput">
+                    <option value="request">Request</option>
+                    <option value="quotation">Quotation</option>
+                    <option value="negotiation">Negotiation</option>
+                    <option value="po-issued">PO Issued</option>
+                    <option value="delivered">Delivered</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Kategori</span>
+                  <select id="vendorCategoryInput">
+                    <option value="chemical">chemical</option>
+                    <option value="sparepart">sparepart</option>
+                    <option value="service">service</option>
+                    <option value="urgent">urgent</option>
+                    <option value="vendor-a">vendor-a</option>
+                    <option value="capex">capex</option>
+                    <option value="opex">opex</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Follow-up date</span>
+                  <input id="vendorFollowUpDateInput" type="date" />
+                </label>
+                <label class="procurement-wide-field">
+                  <span>Dokumen pending</span>
+                  <textarea id="vendorDocsInput" placeholder="Dokumen legal, quotation, spec sheet, TKDN, dll."></textarea>
+                </label>
+                <label class="procurement-wide-field">
+                  <span>Catatan negosiasi</span>
+                  <textarea id="vendorNegotiationInput" placeholder="Harga, lead time, terms, risiko, next step."></textarea>
+                </label>
+                <button class="button procurement-wide-field" type="submit">
+                  <i data-lucide="save"></i>
+                  <span>Save Vendor Page</span>
+                </button>
+              </form>
+            </section>
+
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Vendor Pages</h2>
+                <span>Follow-up register</span>
+              </div>
+              <div class="procurement-card-list" id="vendorTrackerList"></div>
+            </section>
+          </div>
+        </section>
         <section class="workspace-view" id="notesView" aria-label="Pages view">
           <section class="editor-panel">
             <div class="page-toolbar">
@@ -801,7 +962,7 @@
         <section class="workspace-view" id="rfqView" aria-label="RFQ tracker view">
           <div class="kanban-header rfq-header">
             <div>
-              <h1>RFQ Tracker</h1>
+              <h1>PR/PO Tracking Board</h1>
               <span id="rfqMeta">0 RFQ items</span>
             </div>
             <button class="button button-light" id="newRfqButton" type="button">
@@ -821,8 +982,8 @@
 
           <div class="rfq-radar">
             <div>
-              <strong>Procurement flow</strong>
-              <span>Request -> RFQ Sent -> Quotation Received -> Negotiation -> Approval -> PO Issued -> Delivered</span>
+              <strong>PR/PO procurement flow</strong>
+              <span>Request -> Quotation -> Negotiation -> PO Issued -> Delivered</span>
             </div>
           </div>
 
@@ -857,6 +1018,96 @@
           </details>
 
           <div class="kanban-board rfq-board" id="rfqBoard"></div>
+        </section>
+
+        <section class="workspace-view" id="procurementRemindersView" aria-label="Procurement document reminders">
+          <div class="procurement-header">
+            <div>
+              <span class="eyebrow">Procurement Document Reminders</span>
+              <h1>Track quotation deadlines, expired contracts, delivery schedules, evaluations, and renewals.</h1>
+              <p id="procurementReminderMeta">0 active procurement reminders</p>
+            </div>
+          </div>
+
+          <div class="procurement-layout">
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Add Reminder</h2>
+                <span>Creates a procurement page with reminder date</span>
+              </div>
+              <form class="procurement-form" id="procurementReminderForm">
+                <label>
+                  <span>Reminder type</span>
+                  <select id="procurementReminderTypeInput">
+                    <option value="quotation-deadline">Deadline quotation</option>
+                    <option value="expired-contract">Expired contract</option>
+                    <option value="delivery-schedule">Jadwal delivery</option>
+                    <option value="vendor-evaluation">Vendor evaluation</option>
+                    <option value="renewal-agreement">Renewal agreement</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Title</span>
+                  <input id="procurementReminderTitleInput" type="text" placeholder="Quotation deadline - Vendor A" />
+                </label>
+                <label>
+                  <span>PIC / Owner</span>
+                  <input id="procurementReminderOwnerInput" type="text" placeholder="PIC procurement" />
+                </label>
+                <label>
+                  <span>Due date</span>
+                  <input id="procurementReminderDueInput" type="date" required />
+                </label>
+                <label>
+                  <span>Kategori</span>
+                  <select id="procurementReminderCategoryInput">
+                    <option value="urgent">urgent</option>
+                    <option value="chemical">chemical</option>
+                    <option value="sparepart">sparepart</option>
+                    <option value="service">service</option>
+                    <option value="vendor-a">vendor-a</option>
+                    <option value="capex">capex</option>
+                    <option value="opex">opex</option>
+                  </select>
+                </label>
+                <label class="procurement-wide-field">
+                  <span>Notes</span>
+                  <textarea id="procurementReminderNotesInput" placeholder="Dokumen pending, vendor, contract number, delivery detail, or evaluation context."></textarea>
+                </label>
+                <button class="button procurement-wide-field" type="submit">
+                  <i data-lucide="bell"></i>
+                  <span>Save Reminder</span>
+                </button>
+              </form>
+            </section>
+
+            <section class="dashboard-panel">
+              <div class="panel-header">
+                <h2>Active Reminders</h2>
+                <span>Procurement documents and follow-ups</span>
+              </div>
+              <div class="reminder-list procurement-reminder-list" id="procurementReminderList"></div>
+            </section>
+          </div>
+        </section>
+
+        <section class="workspace-view" id="procurementTemplatesView" aria-label="Procurement note templates">
+          <div class="procurement-header">
+            <div>
+              <span class="eyebrow">Template Procurement Note</span>
+              <h1>Create standard procurement notes with category tagging.</h1>
+            </div>
+          </div>
+
+          <section class="dashboard-panel procurement-tag-panel">
+            <div class="panel-header">
+              <h2>Category Tags</h2>
+              <span>Use these tags for filtering procurement work</span>
+            </div>
+            <div class="tag-cloud procurement-category-tags" id="procurementCategoryTags"></div>
+          </section>
+
+          <div class="procurement-template-grid" id="procurementTemplateList"></div>
         </section>
 
         <section class="workspace-view" id="remindersView" aria-label="Reminders view">

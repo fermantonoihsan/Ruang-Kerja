@@ -22,10 +22,8 @@ export function getWorkspaceColumns(templateId = "") {
 
 export const rfqColumns = [
   { id: "request", title: "Request" },
-  { id: "rfq-sent", title: "RFQ Sent" },
-  { id: "quotation-received", title: "Quotation Received" },
+  { id: "quotation", title: "Quotation" },
   { id: "negotiation", title: "Negotiation" },
-  { id: "approval", title: "Approval" },
   { id: "po-issued", title: "PO Issued" },
   { id: "delivered", title: "Delivered" },
 ];
