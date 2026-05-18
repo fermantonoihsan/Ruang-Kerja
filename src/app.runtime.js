@@ -42,7 +42,13 @@ import {
 } from "./services/cloud-sync.service.js";
 import { initFirebase } from "./services/firebase.service.js";
 import { registerServiceWorker } from "./services/pwa.service.js";
-import { importRfqCsvText } from "./services/rfq-import.service.js";
+import {
+  buildProcurementImportPreview,
+  commitProcurementImportRows,
+  parseProcurementCsvText,
+  procurementImportSchema,
+  suggestProcurementMappings,
+} from "./services/rfq-import.service.js";
 import {
   getDueReminders,
   showReminderNotification,
@@ -58,7 +64,7 @@ import { bindEvents } from "./ui/events.js";
 import { renderSidebar } from "./ui/sidebar.render.js";
 import { initTheme } from "./ui/theme.js";
 import { renderUser } from "./ui/user.render.js";
-import { formatDate, generateId, getTodayISO, parseTags } from "./utils/helpers.js";
+import { formatDate, generateId, getTodayISO, parseTags, sanitizeText } from "./utils/helpers.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -95,6 +101,7 @@ let unsubscribeAuth = null;
 let reminderTimer = null;
 let checkingReminders = false;
 let landingRegisterMode = false;
+let rfqImportDraft = null;
 
 function refreshIcons() {
   if (window.lucide && typeof window.lucide.createIcons === "function") {
@@ -486,46 +493,125 @@ async function importRfqFile(file) {
     csvText = await file.text();
   }
 
-  const result = importRfqCsvText(csvText, state);
+  const { headers, rows } = parseProcurementCsvText(csvText);
+
+  if (!headers.length || !rows.length) {
+    window.alert("No spreadsheet rows were found. Please check the CSV/XLSX file.");
+    return;
+  }
+
+  state.templateId = "procurement";
+  state.workspaceName = state.workspaceName || "Procurement Workspace";
+  rfqImportDraft = {
+    fileName,
+    sourceHeaders: headers,
+    sourceRows: rows,
+    mappings: suggestProcurementMappings(headers),
+    additionalHeaders: [],
+    preview: null,
+  };
+  rebuildRfqImportPreview();
+  activeView = "rfq";
+  renderAll();
+}
+
+function rebuildRfqImportPreview() {
+  if (!rfqImportDraft) return;
+
+  rfqImportDraft.preview = buildProcurementImportPreview({
+    sourceHeaders: rfqImportDraft.sourceHeaders,
+    sourceRows: rfqImportDraft.sourceRows,
+    mappings: rfqImportDraft.mappings,
+    additionalHeaders: rfqImportDraft.additionalHeaders,
+  });
+}
+
+function clearRfqImportDraft() {
+  rfqImportDraft = null;
+  renderAll();
+}
+
+function addRfqAdditionalHeaders() {
+  if (!rfqImportDraft) return;
+
+  const input = $("rfqAdditionalHeaderInput");
+  const nextHeaders = String(input?.value || "")
+    .split(",")
+    .map((header) => header.trim())
+    .filter(Boolean);
+
+  rfqImportDraft.additionalHeaders = [...new Set([...(rfqImportDraft.additionalHeaders || []), ...nextHeaders])];
+  if (input) input.value = "";
+  rebuildRfqImportPreview();
+  renderAll();
+}
+
+function updateRfqMapping(label, sourceHeader) {
+  if (!rfqImportDraft) return;
+
+  rfqImportDraft.mappings = {
+    ...rfqImportDraft.mappings,
+    [label]: sourceHeader,
+  };
+  rebuildRfqImportPreview();
+  renderAll();
+}
+
+function commitRfqImportDraft() {
+  if (!rfqImportDraft?.preview) return;
+
+  const hasMappingIssues = rfqImportDraft.preview.mappingIssues.length > 0;
+  if (hasMappingIssues) {
+    window.alert("Please resolve duplicate source column mappings before importing.");
+    return;
+  }
+
+  const result = commitProcurementImportRows({
+    previewRows: rfqImportDraft.preview.rows,
+    currentState: state,
+  });
 
   if (!result.imported && !result.updated) {
-    window.alert("No RFQ data was imported. Please check the CSV headers and rows.");
+    window.alert("No RFQ data was imported. Error rows are rejected.");
     return;
   }
 
   state.templateId = "procurement";
   state.workspaceName = state.workspaceName || "Procurement Workspace";
   saveState();
+  rfqImportDraft = null;
   activeView = "rfq";
   renderAll();
   window.alert(
-    `RFQ import complete: ${result.imported} new RFQ item(s), ${result.updated} updated, ${result.bidRows} supplier bid row(s).`,
+    `RFQ import complete: ${result.imported} new RFQ item(s), ${result.updated} updated, ${result.bidRows} supplier bid row(s), ${result.rejected} rejected.`,
   );
 }
 
 function downloadRfqTemplate() {
   const headers = [
-    "RFQ Number",
+    "RFQ ID",
     "Item Name",
-    "Specification",
+    "Item Specification",
     "Quantity",
-    "UOM",
+    "Unit of Measure",
     "Requester",
-    "Required Date",
+    "Procurement Owner",
+    "Required Delivery Date",
+    "Vendor ID",
     "Vendor Name",
-    "Vendor Contact",
-    "Bid Date",
+    "Vendor Contact Email",
+    "Bid Submission Date",
     "Currency",
     "Unit Price",
-    "Total Price",
-    "Lead Time",
+    "Total Bid Price",
+    "Lead Time Days",
     "Payment Terms",
-    "Warranty",
+    "Warranty Months",
     "Delivery Terms",
-    "Technical Compliance",
+    "Technical Compliance Status",
+    "Procurement Recommendation",
     "Bid Status",
-    "Recommendation",
-    "RFQ Status",
+    "RFQ Workflow Status",
   ];
 
   const sampleRows = [
@@ -536,20 +622,22 @@ function downloadRfqTemplate() {
       "2",
       "unit",
       "Maintenance",
+      "Procurement Officer",
       "2026-06-30",
+      "VEN-001",
       "Vendor A",
       "sales@vendor-a.com",
       "2026-05-20",
       "IDR",
       "15000000",
       "30000000",
+      "30",
       "30 days",
-      "30 days",
-      "12 months",
+      "12",
       "DAP Plant",
       "Compliant",
-      "Bid Received",
       "Recommended",
+      "Received",
       "Quotation Received",
     ],
     [
@@ -559,20 +647,21 @@ function downloadRfqTemplate() {
       "2",
       "unit",
       "Maintenance",
+      "Procurement Officer",
       "2026-06-30",
+      "VEN-002",
       "Vendor B",
       "sales@vendor-b.com",
       "2026-05-21",
       "IDR",
       "14500000",
       "29000000",
+      "45",
       "45 days",
-      "45 days",
-      "12 months",
+      "12",
       "DAP Plant",
-      "Need Clarification",
-      "Clarification Needed",
       "Review",
+      "Received",
       "Quotation Received",
     ],
   ];
@@ -674,9 +763,171 @@ function renderAll() {
   renderEditor({ page: selectedPage() });
   renderKanban({ pages, columns: workspaceColumns, onOpenPage: selectPage, onMovePage: movePageToStatus });
   renderRfqTracker({ pages, columns: rfqColumns, onOpenPage: selectPage, onMoveRfq: moveRfqToStatus });
+  renderRfqImportMapping();
   renderReminders({ pages });
   renderUser({ user: currentUser, syncStatus, guestName: state.displayName });
   refreshIcons();
+}
+
+function renderRfqImportMapping() {
+  const panel = $("rfqImportMappingPanel");
+  if (!panel) return;
+
+  if (!rfqImportDraft?.preview) {
+    panel.hidden = true;
+    panel.innerHTML = "";
+    return;
+  }
+
+  panel.hidden = false;
+  const preview = rfqImportDraft.preview;
+  const acceptedCount = preview.summary.success + preview.summary.warning;
+  const hasMappingIssues = preview.mappingIssues.length > 0;
+  const rowWarningMessages = uniquePreviewMessages(preview.rows, "warning").slice(0, 4);
+  const usedSources = new Set(Object.values(rfqImportDraft.mappings).filter(Boolean));
+
+  panel.innerHTML = `
+    <div class="rfq-import-shell">
+      <div class="rfq-import-heading">
+        <div>
+          <h2>RFQ Import Mapping</h2>
+          <p>${sanitizeText(rfqImportDraft.fileName)} | ${rfqImportDraft.sourceRows.length} spreadsheet row(s)</p>
+        </div>
+        <button class="button button-light icon-button" id="rfqImportClearButton" type="button" aria-label="Clear import mapping">
+          <i data-lucide="x"></i>
+          <span>Clear</span>
+        </button>
+      </div>
+
+      <div class="rfq-import-summary">
+        <span class="import-status-badge success">${preview.summary.success} success</span>
+        <span class="import-status-badge warning">${preview.summary.warning} warning</span>
+        <span class="import-status-badge error">${preview.summary.error} error</span>
+      </div>
+
+      ${
+        hasMappingIssues || rowWarningMessages.length
+          ? `<div class="rfq-import-alerts">
+              ${preview.mappingIssues.map((issue) => `<span class="import-alert error">${sanitizeText(issue)}</span>`).join("")}
+              ${rowWarningMessages.map((message) => `<span class="import-alert warning">${sanitizeText(message)}</span>`).join("")}
+            </div>`
+          : ""
+      }
+
+      <div class="rfq-import-grid">
+        ${procurementImportSchema.map((field) => renderRfqMappingCard(field, usedSources)).join("")}
+      </div>
+
+      <div class="rfq-additional-header">
+        <label>
+          <span>Additional Atlas header</span>
+          <input id="rfqAdditionalHeaderInput" type="text" placeholder="Risk Level, Notes, Budget Code" />
+        </label>
+        <button class="button button-light" id="rfqAddHeaderButton" type="button">
+          <i data-lucide="plus"></i>
+          <span>Add Header</span>
+        </button>
+        ${
+          rfqImportDraft.additionalHeaders.length
+            ? `<div class="rfq-additional-tags">${rfqImportDraft.additionalHeaders
+                .map((header) => `<span>${sanitizeText(header)}</span>`)
+                .join("")}</div>`
+            : ""
+        }
+      </div>
+
+      <div class="rfq-import-preview" role="region" aria-label="RFQ import validation preview">
+        <table>
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th>RFQ ID</th>
+              <th>Item</th>
+              <th>Vendor</th>
+              <th>Qty</th>
+              <th>Unit Price</th>
+              <th>Workflow</th>
+              <th>Validation</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${preview.rows.map(renderRfqPreviewRow).join("")}
+          </tbody>
+        </table>
+      </div>
+
+      <div class="rfq-import-actions">
+        <p>Invalid rows are rejected. Missing recommended fields remain as warnings.</p>
+        <button class="button" id="rfqImportCommitButton" type="button" ${!acceptedCount || hasMappingIssues ? "disabled" : ""}>
+          <i data-lucide="upload-cloud"></i>
+          <span>Import Rows</span>
+        </button>
+      </div>
+    </div>
+  `;
+
+  panel.querySelectorAll("[data-rfq-import-field]").forEach((select) => {
+    select.addEventListener("change", () => {
+      updateRfqMapping(select.dataset.rfqImportField, select.value);
+    });
+  });
+  $("rfqImportClearButton")?.addEventListener("click", clearRfqImportDraft);
+  $("rfqAddHeaderButton")?.addEventListener("click", addRfqAdditionalHeaders);
+  $("rfqAdditionalHeaderInput")?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      addRfqAdditionalHeaders();
+    }
+  });
+  $("rfqImportCommitButton")?.addEventListener("click", commitRfqImportDraft);
+}
+
+function renderRfqMappingCard(field, usedSources) {
+  const selected = rfqImportDraft.mappings[field.label] || "";
+  const stateLabel = selected ? "Mapped" : field.recommended ? "Recommended" : "Not mapped";
+
+  return `
+    <label class="rfq-mapping-card">
+      <span>${sanitizeText(field.label)}</span>
+      <select data-rfq-import-field="${sanitizeText(field.label)}">
+        <option value="">Select source column</option>
+        ${rfqImportDraft.sourceHeaders
+          .map((header) => {
+            const isSelected = header === selected;
+            const isUsedElsewhere = usedSources.has(header) && !isSelected;
+            return `<option value="${sanitizeText(header)}" ${isSelected ? "selected" : ""} ${isUsedElsewhere ? "disabled" : ""}>${sanitizeText(header)}</option>`;
+          })
+          .join("")}
+      </select>
+      <small>${sanitizeText(field.category)} - ${stateLabel}</small>
+    </label>
+  `;
+}
+
+function renderRfqPreviewRow(row) {
+  const item = row.canonicalRow;
+  const quantity = [item.Quantity, item["Unit of Measure"]].filter(Boolean).join(" ") || "-";
+  const validation = row.messages.length ? row.messages.join(" ") : "Ready to import.";
+
+  return `
+    <tr>
+      <td><span class="import-status-pill ${row.status}">${sanitizeText(row.status)}</span></td>
+      <td>${sanitizeText(item["RFQ ID"] || "-")}</td>
+      <td>${sanitizeText(item["Item Name"] || "-")}</td>
+      <td>${sanitizeText(item["Vendor Name"] || "-")}</td>
+      <td>${sanitizeText(quantity)}</td>
+      <td>${sanitizeText(item["Unit Price"] || "-")}</td>
+      <td>${sanitizeText(item["RFQ Workflow Status"] || "-")}</td>
+      <td>${sanitizeText(validation)}</td>
+    </tr>
+  `;
+}
+
+function uniquePreviewMessages(rows, severity) {
+  const statusMessages = rows
+    .filter((row) => (severity === "warning" ? row.status === "warning" : row.status === severity))
+    .flatMap((row) => row.messages);
+  return [...new Set(statusMessages)];
 }
 
 function renderTemplateVisibility() {

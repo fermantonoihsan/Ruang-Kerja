@@ -3740,6 +3740,224 @@ body[data-workspace-mode="procurement"] .kanban-column {
   font-weight: 800;
 }
 
+.rfq-import-mapping {
+  margin-bottom: 16px;
+}
+
+.rfq-import-shell {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 24%, var(--line));
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(15, 118, 110, 0.07), rgba(47, 102, 144, 0.05)),
+    var(--surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.rfq-import-heading,
+.rfq-import-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.rfq-import-heading h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.rfq-import-heading p,
+.rfq-import-actions p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.rfq-import-summary,
+.rfq-import-alerts,
+.rfq-additional-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.import-status-badge,
+.import-status-pill,
+.import-alert {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.import-status-badge {
+  padding: 3px 9px;
+}
+
+.import-status-pill {
+  padding: 2px 8px;
+}
+
+.import-alert {
+  padding: 5px 9px;
+}
+
+.import-status-badge.success,
+.import-status-pill.success {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+}
+
+.import-status-badge.warning,
+.import-status-pill.warning,
+.import-alert.warning {
+  border-color: rgba(182, 122, 34, 0.3);
+  background: rgba(214, 158, 46, 0.1);
+  color: #8a5a12;
+}
+
+.import-status-badge.error,
+.import-status-pill.error,
+.import-alert.error {
+  border-color: rgba(170, 60, 60, 0.32);
+  background: rgba(170, 60, 60, 0.08);
+  color: #a23a3a;
+}
+
+.rfq-import-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.rfq-mapping-card {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-soft) 36%, var(--surface));
+}
+
+.rfq-mapping-card > span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.rfq-mapping-card select,
+.rfq-additional-header input {
+  width: 100%;
+  min-height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.rfq-mapping-card select {
+  padding: 0 10px;
+}
+
+.rfq-mapping-card small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.rfq-additional-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--line));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface-soft) 72%, var(--accent-soft));
+}
+
+.rfq-additional-header label {
+  display: grid;
+  gap: 7px;
+}
+
+.rfq-additional-header label span {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.rfq-additional-header input {
+  padding: 0 12px;
+}
+
+.rfq-additional-tags {
+  grid-column: 1 / -1;
+}
+
+.rfq-additional-tags span {
+  min-height: 24px;
+  padding: 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.rfq-import-preview {
+  max-height: 360px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.rfq-import-preview table {
+  width: 100%;
+  min-width: 920px;
+  border-collapse: collapse;
+}
+
+.rfq-import-preview th,
+.rfq-import-preview td {
+  padding: 12px;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted-strong);
+  font-size: 13px;
+  line-height: 1.35;
+  text-align: left;
+  vertical-align: top;
+}
+
+.rfq-import-preview th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.rfq-import-preview tr:last-child td {
+  border-bottom: 0;
+}
+
 .rfq-card-tags {
   display: flex;
   flex-wrap: wrap;
@@ -4190,6 +4408,16 @@ select:focus,
   .leadership-form,
   .leadership-details,
   .leadership-item {
+    grid-template-columns: 1fr;
+  }
+
+  .rfq-import-heading,
+  .rfq-import-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .rfq-additional-header {
     grid-template-columns: 1fr;
   }
 
