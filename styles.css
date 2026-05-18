@@ -1031,7 +1031,7 @@ i[data-lucide="upload"]::before {
 
 .editor-panel {
   display: grid;
-  grid-template-rows: auto auto auto minmax(360px, 1fr);
+  grid-template-rows: auto auto auto auto minmax(360px, 1fr);
   padding: 16px;
 }
 
@@ -1052,6 +1052,9 @@ i[data-lucide="upload"]::before {
 .page-toolbar select,
 .meta-grid input,
 .meta-grid select,
+.inline-entry input,
+.link-entry input,
+.link-entry select,
 .modal input,
 .modal select {
   width: 100%;
@@ -1082,11 +1085,121 @@ i[data-lucide="upload"]::before {
 
 .meta-grid {
   display: grid;
-  grid-template-columns: 76px minmax(160px, 1fr) 206px;
+  grid-template-columns: 76px minmax(160px, 1fr) 130px 150px 206px;
   gap: 10px;
   padding: 12px 0;
   border-top: 1px solid var(--line);
   border-bottom: 1px solid var(--line);
+}
+
+.page-planning-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  padding: 14px 0 0;
+}
+
+.page-planning-panel {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-soft);
+}
+
+.checklist-list,
+.link-list {
+  display: grid;
+  gap: 8px;
+}
+
+.checklist-item,
+.link-item,
+.inline-entry,
+.link-entry {
+  display: grid;
+  gap: 8px;
+}
+
+.checklist-item {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.checklist-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+}
+
+.checklist-item span.done {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.link-item {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+
+.link-item a {
+  color: var(--accent);
+  font-weight: 800;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.link-item small {
+  color: var(--muted);
+}
+
+.inline-entry {
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.link-entry {
+  grid-template-columns: 150px minmax(90px, 0.7fr) minmax(140px, 1fr) auto;
+}
+
+.priority-badge,
+.due-badge,
+.link-type-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  min-height: 22px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.priority-badge[data-priority="high"] {
+  background: #fff3d1;
+  color: #8a5a00;
+}
+
+.priority-badge[data-priority="critical"] {
+  background: #ffe1dc;
+  color: #9f2418;
+}
+
+.priority-badge[data-priority="low"] {
+  background: #e9f7ef;
+  color: #1e6d3d;
+}
+
+.card-meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 label {
@@ -3638,6 +3751,41 @@ body[data-workspace-mode="procurement"] .kanban-column {
 
 .reminder-list {
   max-width: 880px;
+  display: grid;
+  gap: 14px;
+}
+
+.reminder-group {
+  display: grid;
+  gap: 10px;
+}
+
+.reminder-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reminder-group-header h2 {
+  margin: 0;
+  font-size: 18px;
+}
+
+.reminder-group-header span {
+  display: grid;
+  place-items: center;
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted-strong);
+  font-weight: 800;
+}
+
+.reminder-group-list {
+  display: grid;
+  gap: 8px;
 }
 
 .reminder-item {
@@ -3670,6 +3818,16 @@ select:focus,
 }
 
 @media (max-width: 1120px) {
+  .meta-grid,
+  .page-planning-grid,
+  .link-entry {
+    grid-template-columns: 1fr;
+  }
+
+  .inline-entry {
+    grid-template-columns: 1fr;
+  }
+
   .landing-main {
     grid-template-columns: 1fr;
     grid-template-areas:

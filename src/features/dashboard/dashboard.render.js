@@ -1,4 +1,4 @@
-import { formatDate, sanitizeText, sortByUpdatedAt } from "../../utils/helpers.js";
+import { formatDate, formatDateOnly, getDueDateValue, sanitizeText, sortByUpdatedAt } from "../../utils/helpers.js";
 import { dashboardProfiles } from "../../config/templates.js";
 
 const $ = (id) => document.getElementById(id);
@@ -8,7 +8,7 @@ export function renderDashboard({ state, filteredPages, setView, renderAll }) {
   const visiblePages = typeof filteredPages === "function" ? filteredPages() : filteredPages || [];
   const doing = pages.filter((page) => page.status === "doing");
   const review = pages.filter((page) => page.status === "review");
-  const reminders = pages.filter((page) => page.reminderAt && !page.reminderDone);
+  const reminders = pages.filter((page) => getDueDateValue(page) && !page.reminderDone);
   const profile = dashboardProfiles[state.templateId] || dashboardProfiles.default;
 
   renderDashboardProfile(profile, pages, reminders);
@@ -49,7 +49,7 @@ export function renderDashboard({ state, filteredPages, setView, renderAll }) {
                 <span class="page-dot">${sanitizeText(page.icon || "P")}</span>
                 <span>
                   <strong>${sanitizeText(page.title)}</strong>
-                  <small>${formatDate(page.reminderAt)}</small>
+                  <small>${page.reminderAt ? formatDate(page.reminderAt) : formatDateOnly(getDueDateValue(page))}</small>
                 </span>
               </button>
             `,

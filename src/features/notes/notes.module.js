@@ -19,7 +19,11 @@ export function createPage(pageInput = {}) {
     tags: parseTags(pageInput.tags || ""),
     markdown: pageInput.markdown || `# ${title}\n\nStart writing your notes here.`,
     reminderAt: pageInput.reminderAt || "",
+    dueDate: pageInput.dueDate || "",
     reminderDone: Boolean(pageInput.reminderDone),
+    priority: pageInput.priority || "normal",
+    checklist: Array.isArray(pageInput.checklist) ? pageInput.checklist : [],
+    links: Array.isArray(pageInput.links) ? pageInput.links : [],
     createdAt: getTodayISO(),
     updatedAt: getTodayISO(),
   };
@@ -58,6 +62,8 @@ export function duplicatePage() {
     ...page,
     title: `${page.title || "Untitled"} Copy`,
     tags: page.tags || [],
+    checklist: (page.checklist || []).map((item) => ({ ...item, id: generateId("check") })),
+    links: (page.links || []).map((item) => ({ ...item, id: generateId("link") })),
   });
 }
 
@@ -74,7 +80,10 @@ export function selectPage(pageId) {
 export function filterPages(query = "") {
   const q = query.toLowerCase();
   return (getState().pages || []).filter((page) => {
-    const text = `${page.title} ${page.markdown} ${(page.tags || []).join(" ")}`.toLowerCase();
+    const linkText = (page.links || []).map((link) => `${link.label} ${link.url} ${link.type}`).join(" ");
+    const checklistText = (page.checklist || []).map((item) => item.text).join(" ");
+    const text =
+      `${page.title} ${page.markdown} ${page.priority} ${page.dueDate} ${linkText} ${checklistText} ${(page.tags || []).join(" ")}`.toLowerCase();
     return !q || text.includes(q);
   });
 }

@@ -1,4 +1,4 @@
-import { sanitizeText } from "../../utils/helpers.js";
+import { formatDateOnly, getDueDateValue, getPriorityLabel, normalizePriority, sanitizeText } from "../../utils/helpers.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -25,6 +25,14 @@ export function renderKanban({ pages, columns, onOpenPage, onMovePage }) {
                       (page) => `
                         <article class="kanban-card" draggable="true" data-open-page="${page.id}" data-drag-page="${page.id}">
                           <strong>${sanitizeText(page.icon || "P")} ${sanitizeText(page.title)}</strong>
+                          <div class="card-meta-row">
+                            <span class="priority-badge" data-priority="${normalizePriority(page.priority)}">${getPriorityLabel(page.priority)}</span>
+                            ${
+                              getDueDateValue(page)
+                                ? `<span class="due-badge">Due ${formatDateOnly(getDueDateValue(page))}</span>`
+                                : ""
+                            }
+                          </div>
                           <p>${sanitizeText((page.markdown || "").replaceAll("#", "").slice(0, 90))}</p>
                         </article>
                       `,

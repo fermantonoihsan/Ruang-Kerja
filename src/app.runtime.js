@@ -106,7 +106,10 @@ function filteredPages() {
   const q = searchQuery.toLowerCase();
 
   return (state.pages || []).filter((page) => {
-    const text = `${page.title} ${page.markdown} ${(page.tags || []).join(" ")}`.toLowerCase();
+    const linkText = (page.links || []).map((link) => `${link.label} ${link.url} ${link.type}`).join(" ");
+    const checklistText = (page.checklist || []).map((item) => item.text).join(" ");
+    const text =
+      `${page.title} ${page.markdown} ${page.priority} ${page.dueDate} ${linkText} ${checklistText} ${(page.tags || []).join(" ")}`.toLowerCase();
     return !q || text.includes(q);
   });
 }
@@ -251,6 +254,10 @@ function createPage() {
     rfqStatus: state.templateId === "procurement" ? "request" : "",
     tags: parseTags($("newPageTags")?.value || ""),
     markdown: `# ${title}\n\nStart writing your notes here.`,
+    priority: $("newPagePriority")?.value || "normal",
+    dueDate: $("newPageDueDate")?.value || "",
+    checklist: [],
+    links: [],
     reminderAt: "",
     reminderDone: false,
     createdAt: getTodayISO(),
@@ -279,6 +286,18 @@ function createRfqItem() {
     tags: ["rfq", "procurement"],
     markdown:
       "# New RFQ Item\n\n## Request\n- Requester:\n- Item/service:\n- Required date:\n- Budget type:\n\n## Vendors\n- Vendor A:\n- Vendor B:\n- Vendor C:\n\n## Checklist\n- [ ] Confirm specification\n- [ ] Send RFQ\n- [ ] Compare quotations\n- [ ] Negotiate\n- [ ] Submit for approval\n- [ ] Issue PO\n- [ ] Track delivery",
+    priority: "normal",
+    dueDate: "",
+    checklist: [
+      { id: generateId("check"), text: "Confirm specification", done: false, createdAt: now },
+      { id: generateId("check"), text: "Send RFQ", done: false, createdAt: now },
+      { id: generateId("check"), text: "Compare quotations", done: false, createdAt: now },
+      { id: generateId("check"), text: "Negotiate", done: false, createdAt: now },
+      { id: generateId("check"), text: "Submit for approval", done: false, createdAt: now },
+      { id: generateId("check"), text: "Issue PO", done: false, createdAt: now },
+      { id: generateId("check"), text: "Track delivery", done: false, createdAt: now },
+    ],
+    links: [],
     reminderAt: "",
     reminderDone: false,
     createdAt: now,
@@ -341,6 +360,10 @@ ${negotiationNotes || "-"}
 
 ## Next Follow-up
 - Reminder: ${reminderAt || "-"}`,
+    priority: offerStatus === "delivered" ? "low" : "normal",
+    dueDate: followUpDate,
+    checklist: [],
+    links: [],
     reminderAt,
     reminderDone: false,
     createdAt: now,
@@ -388,6 +411,15 @@ ${notes || "-"}
 - [ ] Follow up responsible PIC/vendor
 - [ ] Update document evidence
 - [ ] Close reminder when completed`,
+    priority: type === "expired-contract" || category === "urgent" ? "critical" : "high",
+    dueDate,
+    checklist: [
+      { id: generateId("check"), text: "Confirm latest status", done: false, createdAt: now },
+      { id: generateId("check"), text: "Follow up responsible PIC/vendor", done: false, createdAt: now },
+      { id: generateId("check"), text: "Update document evidence", done: false, createdAt: now },
+      { id: generateId("check"), text: "Close reminder when completed", done: false, createdAt: now },
+    ],
+    links: [],
     reminderAt: dueDate ? `${dueDate}T09:00` : "",
     reminderDone: false,
     createdAt: now,
@@ -415,6 +447,10 @@ function createProcurementNoteFromTemplate(templateId) {
     rfqStatus: template.rfqStatus || "",
     tags: uniqueTags(template.tags),
     markdown: template.markdown,
+    priority: "normal",
+    dueDate: "",
+    checklist: [],
+    links: [],
     reminderAt: "",
     reminderDone: false,
     createdAt: now,
@@ -810,6 +846,20 @@ function createPageFromMeeting(meetingId) {
     rfqStatus: "",
     tags: ["rapat", "notulen", "keputusan"],
     markdown: meetingToMarkdown(meeting),
+    priority: "high",
+    dueDate: meeting.deadline || "",
+    checklist: [],
+    links: meeting.documentLink
+      ? [
+          {
+            id: generateId("link"),
+            type: "internal-doc",
+            label: "Dokumen rapat",
+            url: meeting.documentLink,
+            createdAt: getTodayISO(),
+          },
+        ]
+      : [],
     reminderAt: meeting.deadline ? `${meeting.deadline}T09:00` : "",
     reminderDone: false,
     createdAt: getTodayISO(),
@@ -836,6 +886,10 @@ function createPageFromDecision(decisionId) {
     rfqStatus: "",
     tags: ["keputusan", "approval pimpinan"],
     markdown: decisionToMarkdown(decision),
+    priority: decision.impact === "critical" ? "critical" : "high",
+    dueDate: decision.deadline || "",
+    checklist: [],
+    links: [],
     reminderAt: decision.deadline ? `${decision.deadline}T09:00` : "",
     reminderDone: false,
     createdAt: getTodayISO(),

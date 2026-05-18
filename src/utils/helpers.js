@@ -10,6 +10,45 @@ export function formatDate(dateValue, locale = "id-ID") {
   }).format(new Date(dateValue));
 }
 
+export function formatDateOnly(dateValue, locale = "id-ID") {
+  if (!dateValue) return "";
+  const date = parseDateOnly(dateValue);
+  if (!date) return "";
+
+  return new Intl.DateTimeFormat(locale, {
+    dateStyle: "medium",
+  }).format(date);
+}
+
+export function parseDateOnly(dateValue) {
+  if (!dateValue) return null;
+  const dateText = String(dateValue).slice(0, 10);
+  const [year, month, day] = dateText.split("-").map(Number);
+  if (!year || !month || !day) return null;
+
+  const date = new Date(year, month - 1, day);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+export function getDueDateValue(page = {}) {
+  return page.dueDate || String(page.reminderAt || "").slice(0, 10) || "";
+}
+
+export function getPriorityLabel(priority = "normal") {
+  const labels = {
+    low: "Low",
+    normal: "Normal",
+    high: "High",
+    critical: "Critical",
+  };
+
+  return labels[priority] || labels.normal;
+}
+
+export function normalizePriority(priority = "normal") {
+  return ["low", "normal", "high", "critical"].includes(priority) ? priority : "normal";
+}
+
 export function formatRelativeDate(dateValue) {
   const date = new Date(dateValue);
   const seconds = Math.round((Date.now() - date.getTime()) / 1000);

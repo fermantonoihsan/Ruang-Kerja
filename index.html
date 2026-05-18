@@ -566,9 +566,62 @@
                 <input id="tagsInput" type="text" placeholder="product, urgent" />
               </label>
               <label>
+                <span>Priority</span>
+                <select id="prioritySelect">
+                  <option value="low">Low</option>
+                  <option value="normal">Normal</option>
+                  <option value="high">High</option>
+                  <option value="critical">Critical</option>
+                </select>
+              </label>
+              <label>
+                <span>Due Date</span>
+                <input id="dueDateInput" type="date" />
+              </label>
+              <label>
                 <span>Reminder</span>
                 <input id="reminderInput" type="datetime-local" />
               </label>
+            </div>
+
+            <div class="page-planning-grid">
+              <section class="page-planning-panel">
+                <div class="panel-header">
+                  <h2>Checklist</h2>
+                  <span id="checklistProgress">0/0 done</span>
+                </div>
+                <div class="checklist-list" id="checklistList"></div>
+                <div class="inline-entry">
+                  <input id="checklistInput" type="text" placeholder="Add checklist item" />
+                  <button class="button button-light" id="addChecklistButton" type="button">
+                    <i data-lucide="plus"></i>
+                    <span>Add</span>
+                  </button>
+                </div>
+              </section>
+
+              <section class="page-planning-panel">
+                <div class="panel-header">
+                  <h2>Links</h2>
+                  <span id="linkCount">0 links</span>
+                </div>
+                <div class="link-list" id="linkList"></div>
+                <div class="link-entry">
+                  <select id="linkTypeInput">
+                    <option value="google-drive">Google Drive</option>
+                    <option value="sharepoint">SharePoint</option>
+                    <option value="e-procurement">e-procurement</option>
+                    <option value="internal-doc">Dokumen internal</option>
+                    <option value="spreadsheet">Spreadsheet</option>
+                  </select>
+                  <input id="linkLabelInput" type="text" placeholder="Label" />
+                  <input id="linkUrlInput" type="url" placeholder="https://..." />
+                  <button class="button button-light" id="addLinkButton" type="button">
+                    <i data-lucide="link"></i>
+                    <span>Add</span>
+                  </button>
+                </div>
+              </section>
             </div>
 
             <textarea id="markdownInput" spellcheck="true" placeholder="# Start writing..."></textarea>
@@ -1276,6 +1329,19 @@
         <label>
           <span>Status</span>
           <select id="newPageStatus"></select>
+        </label>
+        <label>
+          <span>Priority</span>
+          <select id="newPagePriority">
+            <option value="low">Low</option>
+            <option value="normal" selected>Normal</option>
+            <option value="high">High</option>
+            <option value="critical">Critical</option>
+          </select>
+        </label>
+        <label>
+          <span>Due Date</span>
+          <input id="newPageDueDate" type="date" />
         </label>
         <label>
           <span>Tags</span>

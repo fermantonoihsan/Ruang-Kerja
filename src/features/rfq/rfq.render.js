@@ -1,4 +1,4 @@
-import { sanitizeText } from "../../utils/helpers.js";
+import { formatDateOnly, getDueDateValue, getPriorityLabel, normalizePriority, sanitizeText } from "../../utils/helpers.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -29,6 +29,14 @@ export function renderRfqTracker({ pages, columns, onOpenPage, onMoveRfq }) {
                       (page) => `
                         <article class="kanban-card rfq-card" draggable="true" data-open-rfq="${page.id}" data-drag-rfq="${page.id}">
                           <strong>${sanitizeText(page.icon || "R")} ${sanitizeText(page.title)}</strong>
+                          <div class="card-meta-row">
+                            <span class="priority-badge" data-priority="${normalizePriority(page.priority)}">${getPriorityLabel(page.priority)}</span>
+                            ${
+                              getDueDateValue(page)
+                                ? `<span class="due-badge">Due ${formatDateOnly(getDueDateValue(page))}</span>`
+                                : ""
+                            }
+                          </div>
                           <p>${sanitizeText(getRfqSummary(page))}</p>
                           <small>${(page.supplierBids || []).length} supplier bid(s)</small>
                           <div class="rfq-card-tags">

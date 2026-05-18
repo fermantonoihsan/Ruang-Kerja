@@ -121,6 +121,24 @@ export function bindEvents({
     renderAll();
   });
 
+  $("prioritySelect")?.addEventListener("change", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.priority = event.target.value || "normal";
+    page.updatedAt = getTodayISO();
+    saveState();
+    renderAll();
+  });
+
+  $("dueDateInput")?.addEventListener("change", (event) => {
+    const page = selectedPage();
+    if (!page) return;
+    page.dueDate = event.target.value || "";
+    page.updatedAt = getTodayISO();
+    saveState();
+    renderAll();
+  });
+
   $("markdownInput")?.addEventListener("input", (event) => {
     const page = selectedPage();
     if (!page) return;
@@ -136,6 +154,83 @@ export function bindEvents({
 
     page.reminderAt = event.target.value || "";
     page.reminderDone = false;
+    page.updatedAt = getTodayISO();
+    saveState();
+    renderAll();
+  });
+
+  $("addChecklistButton")?.addEventListener("click", () => {
+    const page = selectedPage();
+    const text = $("checklistInput")?.value?.trim() || "";
+    if (!page || !text) return;
+
+    page.checklist = Array.isArray(page.checklist) ? page.checklist : [];
+    page.checklist.push({
+      id: generateId("check"),
+      text,
+      done: false,
+      createdAt: getTodayISO(),
+    });
+    page.updatedAt = getTodayISO();
+    $("checklistInput").value = "";
+    saveState();
+    renderAll();
+  });
+
+  $("addLinkButton")?.addEventListener("click", () => {
+    const page = selectedPage();
+    const type = $("linkTypeInput")?.value || "internal-doc";
+    const label = $("linkLabelInput")?.value?.trim() || "";
+    const url = $("linkUrlInput")?.value?.trim() || "";
+    if (!page || !label || !isValidLinkUrl(url)) return;
+
+    page.links = Array.isArray(page.links) ? page.links : [];
+    page.links.push({
+      id: generateId("link"),
+      type,
+      label,
+      url,
+      createdAt: getTodayISO(),
+    });
+    page.updatedAt = getTodayISO();
+    $("linkLabelInput").value = "";
+    $("linkUrlInput").value = "";
+    saveState();
+    renderAll();
+  });
+
+  document.addEventListener("change", (event) => {
+    const checkbox = event.target.closest("[data-checklist-toggle]");
+    if (!checkbox) return;
+
+    const page = selectedPage();
+    const item = page?.checklist?.find((entry) => entry.id === checkbox.dataset.checklistToggle);
+    if (!item) return;
+
+    item.done = Boolean(checkbox.checked);
+    page.updatedAt = getTodayISO();
+    saveState();
+    renderAll();
+  });
+
+  document.addEventListener("click", (event) => {
+    const checklistDelete = event.target.closest("[data-checklist-delete]");
+    if (checklistDelete) {
+      const page = selectedPage();
+      if (!page) return;
+      page.checklist = (page.checklist || []).filter((item) => item.id !== checklistDelete.dataset.checklistDelete);
+      page.updatedAt = getTodayISO();
+      saveState();
+      renderAll();
+      return;
+    }
+
+    const linkDelete = event.target.closest("[data-link-delete]");
+    if (!linkDelete) return;
+
+    const page = selectedPage();
+    if (!page) return;
+    page.links = (page.links || []).filter((item) => item.id !== linkDelete.dataset.linkDelete);
     page.updatedAt = getTodayISO();
     saveState();
     renderAll();
@@ -166,6 +261,8 @@ export function bindEvents({
       ...page,
       id: generateId("page"),
       title: `${page.title || "Untitled"} Copy`,
+      checklist: (page.checklist || []).map((item) => ({ ...item, id: generateId("check") })),
+      links: (page.links || []).map((item) => ({ ...item, id: generateId("link") })),
       createdAt: now,
       updatedAt: now,
     };
@@ -295,6 +392,15 @@ export function bindEvents({
     const nameLabel = $("authName")?.closest("label");
     if (nameLabel) nameLabel.hidden = !isRegisterMode;
     if ($("authName")) $("authName").required = isRegisterMode;
+  }
+}
+
+function isValidLinkUrl(value = "") {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" || url.protocol === "http:";
+  } catch {
+    return false;
   }
 }
 

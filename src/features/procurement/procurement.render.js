@@ -1,4 +1,13 @@
-import { formatDate, isDueSoon, sanitizeText, sortByUpdatedAt } from "../../utils/helpers.js";
+import {
+  formatDate,
+  formatDateOnly,
+  getDueDateValue,
+  getPriorityLabel,
+  isDueSoon,
+  normalizePriority,
+  sanitizeText,
+  sortByUpdatedAt,
+} from "../../utils/helpers.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -181,6 +190,14 @@ function renderReminderCard(page) {
       <div>
         <strong>${sanitizeText(page.title)}</strong>
         <span>${sanitizeText(getReminderType(page))} | ${formatDate(page.reminderAt)}</span>
+        <div class="card-meta-row">
+          <span class="priority-badge" data-priority="${normalizePriority(page.priority)}">${getPriorityLabel(page.priority)}</span>
+          ${
+            getDueDateValue(page)
+              ? `<span class="due-badge">Due ${formatDateOnly(getDueDateValue(page))}</span>`
+              : ""
+          }
+        </div>
         <div class="rfq-card-tags">
           ${(page.tags || []).slice(0, 6).map((tag) => `<span>#${sanitizeText(tag)}</span>`).join("")}
         </div>

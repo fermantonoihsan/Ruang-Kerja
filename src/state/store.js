@@ -1,5 +1,5 @@
 import { loadFromStorage, saveToStorage, storageKeys } from "../services/storage.service.js";
-import { generateId, getTodayISO } from "../utils/helpers.js";
+import { generateId, getTodayISO, normalizePriority } from "../utils/helpers.js";
 
 let state = null;
 const listeners = new Set();
@@ -13,7 +13,11 @@ function createInitialState() {
     tags: ["welcome", "workspace"],
     markdown: "# Welcome to Atlas Workspace\n\nCapture notes, organize tasks, and manage reminders from one calm workspace.",
     reminderAt: "",
+    dueDate: "",
     reminderDone: false,
+    priority: "normal",
+    checklist: [],
+    links: [],
     createdAt: getTodayISO(),
     updatedAt: getTodayISO(),
   };
@@ -39,6 +43,7 @@ export function initStore(initialState = null) {
     loadFromStorage(storageKeys.workspace, null) ||
     createInitialState();
 
+  state = normalizeWorkspaceState(state);
   notify();
   return state;
 }
@@ -52,7 +57,8 @@ export function getState() {
 }
 
 export function saveState() {
-  const currentState = getState();
+  const currentState = normalizeWorkspaceState(getState());
+  state = currentState;
   currentState.updatedAt = getTodayISO();
   saveToStorage(storageKeys.workspace, currentState);
   notify();
@@ -66,20 +72,38 @@ export function setState(nextState = {}) {
     updatedAt: getTodayISO(),
   };
 
+  state = normalizeWorkspaceState(state);
   saveToStorage(storageKeys.workspace, state);
   notify();
   return state;
 }
 
 export function replaceState(nextState) {
-  state = {
+  state = normalizeWorkspaceState({
     ...nextState,
     updatedAt: nextState?.updatedAt || getTodayISO(),
-  };
+  });
 
   saveToStorage(storageKeys.workspace, state);
   notify();
   return state;
+}
+
+export function normalizePage(page = {}) {
+  return {
+    ...page,
+    priority: normalizePriority(page.priority),
+    dueDate: page.dueDate || String(page.reminderAt || "").slice(0, 10) || "",
+    checklist: Array.isArray(page.checklist) ? page.checklist : [],
+    links: Array.isArray(page.links) ? page.links : [],
+  };
+}
+
+function normalizeWorkspaceState(workspace = {}) {
+  return {
+    ...workspace,
+    pages: Array.isArray(workspace.pages) ? workspace.pages.map(normalizePage) : [],
+  };
 }
 
 export function selectedPage() {
