@@ -187,6 +187,17 @@
     <i data-lucide="settings"></i>
   </button>
 
+  <label class="workspace-mode-select" title="Workspace mode">
+    <span>Mode</span>
+    <select id="workspaceModeSelect" aria-label="Workspace mode">
+      <option value="" disabled>Mode</option>
+      <option value="procurement">Procurement</option>
+      <option value="staff">Staff</option>
+      <option value="manager">Manager</option>
+      <option value="bps-manager">BPS</option>
+    </select>
+  </label>
+
   <button class="button button-quiet" id="guestLandingButton" type="button" title="Kembali ke landing page">
     <i data-lucide="home"></i>
     <span>Landing</span>
@@ -212,28 +223,22 @@
             <i data-lucide="plus"></i>
           </button>
           </div>
-          <div class="sidebar-mode-switcher" aria-label="Workspace mode">
-            <button type="button" data-template-choice="procurement">Procurement</button>
-            <button type="button" data-template-choice="staff">Staff</button>
-            <button type="button" data-template-choice="manager">Manager</button>
-            <button type="button" data-template-choice="bps-manager">BPS</button>
-          </div>
         </div>
 
         <div class="sidebar-group">
         <div class="sidebar-label">Main Navigation</div>
         <nav class="view-tabs" aria-label="Navigasi utama">
-          <button class="nav-item active" data-view="dashboard">
+          <button class="nav-item active" data-view="dashboard" data-hide-in-procurement>
             <img src="./assets/icons/layout-dashboard.svg" class="nav-icon" alt="" />
             <span>Dashboard</span>
           </button>
 
-<button class="nav-item" data-view="notes">
+<button class="nav-item" data-view="notes" data-hide-in-procurement>
   <img src="./assets/icons/sticky-note.svg" class="nav-icon" alt="" />
   <span>Notes</span>
 </button>
 
-<button class="nav-item" data-view="kanban">
+<button class="nav-item" data-view="kanban" data-hide-in-procurement>
   <img src="./assets/icons/kanban-square.svg" class="nav-icon" alt="" />
   <span>Kanban</span>
 </button>

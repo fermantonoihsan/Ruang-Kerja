@@ -597,7 +597,7 @@ function applyTemplate(templateId) {
   replaceState(nextWorkspace);
   state = getState();
   closeDialog("templateDialog");
-  activeView = "dashboard";
+  activeView = templateId === "procurement" ? "procurement-dashboard" : "dashboard";
   renderAll();
 }
 
@@ -647,6 +647,10 @@ function renderTemplateVisibility() {
   const isProcurement = state.templateId === "procurement";
   const isBpsManager = state.templateId === "bps-manager";
 
+  if ($("workspaceModeSelect")) {
+    $("workspaceModeSelect").value = state.templateId || "";
+  }
+
   document.querySelectorAll("[data-template-choice]").forEach((button) => {
     const isActiveMode = button.dataset.templateChoice === state.templateId;
     button.classList.toggle("active", isActiveMode);
@@ -658,10 +662,19 @@ function renderTemplateVisibility() {
     node.style.display = isProcurement ? "" : "none";
   });
 
+  document.querySelectorAll("[data-hide-in-procurement]").forEach((node) => {
+    node.hidden = isProcurement;
+    node.style.display = isProcurement ? "none" : "";
+  });
+
   document.querySelectorAll("[data-bps-manager-only]").forEach((node) => {
     node.hidden = !isBpsManager;
     node.style.display = isBpsManager ? "" : "none";
   });
+
+  if (isProcurement && ["dashboard", "kanban"].includes(activeView)) {
+    activeView = "procurement-dashboard";
+  }
 
   if (
     !isProcurement &&
@@ -1285,6 +1298,12 @@ export function initAtlasRuntime() {
     button.addEventListener("click", () => {
       applyTemplate(button.dataset.templateChoice);
     });
+  });
+
+  $("workspaceModeSelect")?.addEventListener("change", (event) => {
+    const templateId = event.target.value;
+    if (!templateId) return;
+    applyTemplate(templateId);
   });
 
   $("newRfqButton")?.addEventListener("click", () => {

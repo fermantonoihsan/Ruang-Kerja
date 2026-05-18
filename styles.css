@@ -636,6 +636,34 @@ label span {
   min-width: 0;
 }
 
+.workspace-mode-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  background: var(--glass);
+  color: var(--muted-strong);
+  backdrop-filter: var(--glass-blur);
+}
+
+.workspace-mode-select span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+}
+
+.workspace-mode-select select {
+  min-width: 118px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 850;
+}
+
 .button,
 .icon-button,
 .text-button,
@@ -840,35 +868,6 @@ i[data-lucide="upload"]::before {
   display: block;
   margin-top: 2px;
   font-size: 15px;
-}
-
-.sidebar-mode-switcher {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.sidebar-mode-switcher button {
-  min-width: 0;
-  min-height: 32px;
-  border: 1px solid var(--glass-border);
-  border-radius: var(--radius);
-  background: var(--glass);
-  color: var(--muted-strong);
-  font-size: 11px;
-  font-weight: 850;
-  line-height: 1.1;
-  padding: 0 8px;
-  text-align: center;
-  backdrop-filter: var(--glass-blur);
-}
-
-.sidebar-mode-switcher button:hover,
-.sidebar-mode-switcher button.active {
-  border-color: color-mix(in srgb, var(--accent) 36%, var(--line));
-  background: var(--accent-soft);
-  color: var(--accent-dark);
 }
 
 .view-tabs {
@@ -1408,6 +1407,14 @@ textarea {
 
   .top-actions .button span {
     display: none;
+  }
+
+  .workspace-mode-select span {
+    display: none;
+  }
+
+  .workspace-mode-select select {
+    min-width: 106px;
   }
 
   .sidebar {
@@ -3821,6 +3828,7 @@ select:focus,
   }
 
   .top-actions .sync-badge,
+  .top-actions .workspace-mode-select span,
   .top-actions #guestLandingButton span,
   .top-actions #authButton span {
     display: none;
