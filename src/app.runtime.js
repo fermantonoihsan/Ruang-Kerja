@@ -406,15 +406,10 @@ function csvCell(value) {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-function openTemplateChooser() {
-  closeDialog("settingsDialog");
-  window.setTimeout(() => {
-    openDialog("templateDialog");
-  }, 0);
-}
-
 function applyTemplate(templateId) {
   const currentState = getState();
+  if (currentState.templateId === templateId) return;
+
   const hasExistingWorkspace = Boolean(currentState.templateId || (currentState.pages || []).length > 1);
 
   if (hasExistingWorkspace) {
@@ -474,6 +469,12 @@ function renderAll() {
 function renderTemplateVisibility() {
   const isProcurement = state.templateId === "procurement";
   const isBpsManager = state.templateId === "bps-manager";
+
+  document.querySelectorAll("[data-template-choice]").forEach((button) => {
+    const isActiveMode = button.dataset.templateChoice === state.templateId;
+    button.classList.toggle("active", isActiveMode);
+    button.setAttribute("aria-pressed", String(isActiveMode));
+  });
 
   document.querySelectorAll("[data-procurement-only]").forEach((node) => {
     node.hidden = !isProcurement;
@@ -1099,10 +1100,6 @@ export function initAtlasRuntime() {
     });
   });
 
-  $("openTemplateChooser")?.addEventListener("click", () => {
-    openTemplateChooser();
-  });
-
   $("newRfqButton")?.addEventListener("click", () => {
     createRfqItem();
   });
@@ -1180,9 +1177,6 @@ export function initAtlasRuntime() {
   setLandingAuthMode(false);
 
   renderAll();
-  if (!state.templateId) {
-    openDialog("templateDialog");
-  }
   if (shouldShowLanding()) {
     showLanding();
   }
