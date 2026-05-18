@@ -1015,7 +1015,7 @@ i[data-lucide="upload"]::before {
 
 #notesView.active {
   display: grid;
-  grid-template-columns: minmax(340px, 1fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 0.82fr);
   gap: 18px;
   align-items: stretch;
 }
@@ -1023,6 +1023,7 @@ i[data-lucide="upload"]::before {
 .editor-panel,
 .preview-panel {
   min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--surface);
@@ -1085,7 +1086,7 @@ i[data-lucide="upload"]::before {
 
 .meta-grid {
   display: grid;
-  grid-template-columns: 76px minmax(160px, 1fr) 130px 150px 206px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
   gap: 10px;
   padding: 12px 0;
   border-top: 1px solid var(--line);
@@ -1094,7 +1095,7 @@ i[data-lucide="upload"]::before {
 
 .page-planning-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
   padding: 14px 0 0;
 }
@@ -1163,7 +1164,12 @@ i[data-lucide="upload"]::before {
 }
 
 .link-entry {
-  grid-template-columns: 150px minmax(90px, 0.7fr) minmax(140px, 1fr) auto;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(140px, 1fr) minmax(180px, 1.2fr) auto;
+}
+
+.link-entry .button {
+  min-width: 76px;
+  white-space: nowrap;
 }
 
 .priority-badge,
@@ -1200,6 +1206,12 @@ i[data-lucide="upload"]::before {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+@media (min-width: 1440px) {
+  .page-planning-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }
 
 label {
